@@ -1,0 +1,208 @@
+---
+title: "deeplyr"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = T, eval = T, message = F, warning = F, error = F)
+```
+
+```{r, echo = F, results='asis'}
+library(badger)
+cat(
+	badge_code_size("systats/deeplyr"),
+	badge_last_commit("systats/deeplyr")
+)
+```
+
+This is a light-weight model engine mainly for text classification tasks written as R6class. While Keras, XGBoost or Ranger (RF) provide high quality learners, `deeplyr` comes with unifying train/test/report functions for all backends mentioned. This streamlined data/ model worklfow does automatically 
+
+* log (thanks to [`trackR`](https://github.com/daroczig/logger)), 
+* benchmark (thanks to [`tictoc`]() and [`Metrics`]())
+* optimize over hyperparameter spaces. 
+
+
+# Other stuff
+
+* a roadmap for improved NLP decisions focussing on different outcomes (fortcomming).
+* shinyapp for monitoring model performances.
+
+
+## Workflow
+
+<img src ="package_logic/package_logic.png" width = "70%">
+
+
+# Packages
+
+```{r}
+pacman::p_load(devtools, R6, tidyverse, purrr, furrr, RSQLite, 
+      # GA, dials,
+      jsonlite, text2vec, keras, reticulate)
+
+options(scipen = 999)
+devtools::load_all()
+# devtools::document()
+```
+# Data
+
+## DTM
+
+```{r}
+dparams <- list(
+  data_path = "sample_dat.Rdata",
+  text = "lemma",
+  input_dim = 2000,
+  seq_len = 150,
+  term_count_min = 5,
+  doc_proportion_max  = .1
+)
+
+# plan(multiprocess, workers = 4)
+# options(future.globals.maxSize = 1024^4)
+dc <- create_dtm_container(dparams)
+dc$report()
+#dc$get_param()
+```
+
+
+## Seqences
+
+```{r}
+dparams <- list(
+  data_path = "sample_dat.Rdata",
+  text = "lemma",
+  input_dim = 5000,
+  seq_len = 150,
+  term_count_min = 5,
+  doc_proportion_max  = .1 
+)
+
+# plan(multiprocess, workers = 4)
+# options(future.globals.maxSize = 1024^4)
+dc_seq <- create_seq_container(dparams)
+# dc$report()
+#dc_seq
+```
+
+
+# Backends
+
+## Ranger (RF)
+
+```{r}
+#devtools::document()
+
+mparams <- list(
+  output_dim = 1,
+  target = "binary",
+  model_name = "rf"
+)
+
+jo <- deeplyr::learner$new("ranger:binary")
+jo$set_param(mparams)
+jo$set_data(dc)
+jo$split(oos = F, val = F)
+
+jo$train()
+jo$test(dev = F)
+s <- jo$report()
+
+jo$preds; jo$perform; jo$results
+table(jo$preds$pred, jo$preds$target)
+# jo$predict_dtm("make america great again! maga")
+```
+
+## XGBoost
+
+```{r}
+#devtools::document()
+
+mparams <- list(
+  output_dim = 1,
+  target = "binary"
+)
+
+jo <- deeplyr::learner$new("xgboost:binary")
+jo$set_param(mparams)
+jo$set_data(dc)
+jo$split(oos = F, val = F)
+
+jo$train()
+jo$test(dev = F)
+jo$test()
+s <- jo$report()
+
+jo$preds; jo$perform; jo$results
+table(jo$preds$pred, jo$preds$target)
+```
+
+
+## Keras
+
+```{r}
+#devtools::document()
+
+model_params <- list(
+  epochs = 1,
+  embed_dim = 128,
+  output_dim = 1, 
+  output_fun = "sigmoid", 
+  loss = "binary_crossentropy", 
+  optimizer = "adam", 
+  metrics = "accuracy",
+  target = "binary",
+  model = deeplyr::keras_multi_cnn,
+  model_name = "multi_cnn"
+)
+
+jo <- deeplyr::learner$new("keras:binary")
+jo$set_param(model_params)
+jo$set_data(dc_seq)
+jo$split(oos = F, val = T)
+
+jo$train()
+jo$test(dev = F)
+s <- jo$report()
+
+jo$results; jo$preds; jo$perform
+table(jo$preds$pred, jo$preds$target)
+```
+
+
+
+
+
+# Options
+
+```{r, eval = F}
+# keras::install_keras()
+# tensorflow::install_tensorflow()
+# py_config()
+# use_python("/anaconda3/lib/python3.7")
+# py_install("tensorflow")
+# Sys.getenv("RETICULATE_PYTHON")
+```
+
+
+```{bash, eval = F}
+echo "Sys.setenv(RETICULATE_PYTHON = '~/usr/local/bin/python3')" > ~/.Rprofile
+```
+
+```{bash, eval = F}
+nano ~/.Rprofile
+```
+
+
+# Data
+
+```{r}
+# load("projects/dev-predict-participation/data/final_tweets.Rdata")
+# sample_dat <- final_tweets %>% 
+#   mutate(party_binary = case_when(party == "rep" ~ 1, party == "dem" ~ 0)) %>%
+#   select(linear = theta, binary = party_binary, category = race, lemma) %>% 
+#   sample_n(10000) %>% 
+#   glimpse
+# 
+# save(sample_dat, file = "sample_dat.Rdata")
+```

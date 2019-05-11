@@ -4,7 +4,7 @@
 \alias{plot_roc}
 \title{plot_roc}
 \usage{
-plot_roc(target, prob)
+plot_roc(preds)
 }
 \description{
 plot_roc(all_preds$target, all_preds$prob)

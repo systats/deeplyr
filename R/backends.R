@@ -4,6 +4,7 @@ backends <- R6::R6Class("learner",
   private = list(
     backend = NULL,
     objective = NULL,
+    plot = NULL,
     eval_metrics = function(){
       self$perform  <- private$metrics %>%
         imap_dfc(~{
@@ -55,7 +56,6 @@ backends <- R6::R6Class("learner",
       private$backend <- input[1]
       private$objective <- input[2]
       private$metrics <- list_metrics[[private$objective]] # linear, binary, categorical
-      
       
       if(private$backend == "keras"){
         
@@ -124,6 +124,7 @@ backends <- R6::R6Class("learner",
         self$eval <- private$eval_model_categorical
       } else if(private$objective == "binary"){
         self$eval <- private$eval_model_binary
+        private$plot <- plot_binary
       }
     }
   )

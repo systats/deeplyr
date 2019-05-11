@@ -4,7 +4,7 @@
 \alias{plot_confusion}
 \title{plot_confusion}
 \usage{
-plot_confusion(pred, real)
+plot_confusion(preds)
 }
 \description{
 plot_confusion(all_preds$pred, all_preds$target)

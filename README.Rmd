@@ -38,7 +38,8 @@ This is a light-weight model engine mainly for text classification tasks written
 ```{r}
 pacman::p_load(devtools, R6, tidyverse, purrr, furrr, RSQLite, 
       # GA, dials,
-      jsonlite, text2vec, keras, reticulate)
+      jsonlite, text2vec, keras, reticulate,
+      plotROC, alluvial, ggforce, ggalluvial, ggparallel, survminer, survival)
 
 options(scipen = 999)
 devtools::load_all()
@@ -91,12 +92,10 @@ dc_seq <- create_seq_container(dparams)
 ## Ranger (RF)
 
 ```{r}
-#devtools::document()
-
+devtools::document()
 mparams <- list(
   output_dim = 1,
-  target = "binary",
-  model_name = "rf"
+  target = "binary"
 )
 
 jo <- deeplyr::learner$new("ranger:binary")
@@ -108,8 +107,7 @@ jo$train()
 jo$test(dev = F)
 s <- jo$report()
 
-jo$preds; jo$perform; jo$results
-table(jo$preds$pred, jo$preds$target)
+jo$glimpse()
 # jo$predict_dtm("make america great again! maga")
 ```
 
@@ -117,7 +115,6 @@ table(jo$preds$pred, jo$preds$target)
 
 ```{r}
 #devtools::document()
-
 mparams <- list(
   output_dim = 1,
   target = "binary"
@@ -133,16 +130,14 @@ jo$test(dev = F)
 jo$test()
 s <- jo$report()
 
-jo$preds; jo$perform; jo$results
-table(jo$preds$pred, jo$preds$target)
+jo$glimpse()
 ```
 
 
 ## Keras
 
 ```{r}
-#devtools::document()
-
+devtools::document()
 model_params <- list(
   epochs = 1,
   embed_dim = 128,
@@ -165,8 +160,7 @@ jo$train()
 jo$test(dev = F)
 s <- jo$report()
 
-jo$results; jo$preds; jo$perform
-table(jo$preds$pred, jo$preds$target)
+jo$glimpse()
 ```
 
 
@@ -206,3 +200,23 @@ nano ~/.Rprofile
 # 
 # save(sample_dat, file = "sample_dat.Rdata")
 ```
+
+
+# Eval
+
+```{r}
+dir("models/0a1505ace1d5ee9fb9a1191357b94865/")
+pred <- get(load("models/0a1505ace1d5ee9fb9a1191357b94865/model_preds.Rdata"))
+pred %>% glimpse
+```
+
+## Binary
+
+```{r}
+devtools::document()
+
+
+
+```
+
+

@@ -68,6 +68,7 @@ learner <- R6::R6Class("learner",
     preds = NULL,
     perform = NULL,
     results = NULL,
+    plots = NULL,
     ### Main Function
     initialize = function(backend) {
       
@@ -86,6 +87,10 @@ learner <- R6::R6Class("learner",
     },
     glimpse_data = function(){
       return(list(private$data, private$x_test, private$y_test) %>% map(glimpse))
+    },
+    glimpse = function(){
+      #plots <- do.call(gridExtra::grid.arrange, c(self$plots, list(ncol=2)))
+      return(list(self$preds, self$perform, self$results, self$plots))
     },
     set_data = function(container = NULL, path = NULL){
 
@@ -156,7 +161,9 @@ learner <- R6::R6Class("learner",
       if(dev) return(self$preds)
       
       self$eval()
-
+      
+      self$plots <- private$plot(self$preds)
+      
       ### finalize results
       self$results <- private$param %>%
         keep(~is.atomic(.x) & length(.x) == 1) %>%

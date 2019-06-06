@@ -1,0 +1,130 @@
+---
+title: "Test"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+´
+
+# Packages
+
+```{r}
+pacman::p_load(
+  devtools, tidyverse, reticulate, keras, GA, dials, RSQLite, tensorflow,
+  magrittr, crayon, R6, furrr, purrr, jsonlite, tidytext, text2vec, tictoc, ggforce,
+  plotROC, pROC, tidyr, survival, survminer
+)
+# devtools::install_github("rstudio/reticulate") #!!!!!
+
+devtools::document()
+library(deeplyr)
+set.seed(42)
+plan(multiprocess)
+# plan(multiprocess, workers = 2)
+```
+
+
+# Data
+
+```{r}
+tweets <- readRDS("sample.rds")
+```
+
+
+
+```{r}
+#devtools::document()
+library(deeplyr)
+
+dp <- list(
+  text = "lemma",
+  input_dim = 5000,
+  seq_len = 250,
+  term_count_min = 3,
+  doc_proportion_max  = .1
+)
+
+options(future.globals.maxSize = 1024^4)
+sc <- create_seq_container(param = dp, data = tweets, parallel = F)
+sc$data %>% glimpse
+sc$x[1:5, 1:10]
+```
+
+# Fit them all
+
+```{r}
+#devtools::document()
+fit_model <- function(backend, ...){
+  f <- deeplyr::learner$new(backend)
+  f$set(...)
+  f$train(cv = F)
+  f$test()
+  return(f)
+}
+```
+
+
+
+# Models
+
+## Theta Linear
+
+```{r}
+mpl <- list(
+  output_dim = 1,
+  embed_dim = 128,
+  batch_size = 100,
+  epochs = 1, 
+  target = "theta",
+  model  = deeplyr::keras_multi_cnn,
+  model_name = "custom"
+)
+
+fl1 <- fit_model(
+  "keras:linear",
+  param = mpl,
+  container = sc,
+  oos = T,
+  val = T,
+  id = "voter_id"
+)
+
+# nn <- preds %>% 
+#   mutate(target = target, pred = scale(pred)[,1])
+# 
+# mean(sqrt((nn$target - nn$pred)^2))
+# mean((nn$target - nn$pred)^2)
+
+fl1$perform %>% gather(measure, value) %>% knitr::kable()
+do.call(gridExtra::grid.arrange, c(fl1$plots, list(ncol = 2)))
+```
+
+
+## Party Binary
+
+```{r}
+mpb <- list(
+  output_dim = 1,
+  embed_dim = 128,
+  batch_size = 100,
+  epochs = 1, 
+  target = "party_2",
+  model  = deeplyr::keras_multi_cnn,
+  model_name = "custom"
+)
+
+f2 <- fit_model(
+  "keras:binary",
+  param = mpb,
+  container = sc,
+  oos = T,
+  val = T,
+  id = "voter_id"
+)
+
+f2$perform %>% gather(measure, value) %>% knitr::kable()
+do.call(gridExtra::grid.arrange, c(f2$plots[1:4], list(ncol = 2)))
+f2$plots$surv
+```

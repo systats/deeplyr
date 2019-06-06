@@ -12,3 +12,20 @@ License: What license it uses
 Encoding: UTF-8
 LazyData: true
 RoxygenNote: 6.1.1
+Imports:
+    tidyverse,
+    purrr, 
+    furrr, 
+    glue, 
+    dummies,
+    Metrics,
+    reticulate,
+    tictoc,
+    GA,
+    ggforce,
+    ggridges
+Suggests:
+    keras, 
+    xgboost,
+    ranger,
+    devtools

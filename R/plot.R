@@ -10,6 +10,7 @@ plot_scatter <- function(actual, pred){
     theme_classic()
   
 }
+
 #' @export
 plot_marginal <- function(actual, pred){
   
@@ -140,9 +141,9 @@ plot_sankey <- function(actual, pred){
     mutate(x = factor(x, levels = c("actual", "pred")))
   
   ggplot(flow_dat, aes(x, id = id, split = y, value = n)) +
-    geom_parallel_sets(aes(fill = true), alpha = 0.3, axis.width = 0.1) +
-    geom_parallel_sets_axes(axis.width = 0.1) +
-    geom_parallel_sets_labels(colour = 'white') +
+    ggforce::geom_parallel_sets(aes(fill = true), alpha = 0.3, axis.width = 0.1) +
+    ggforce::geom_parallel_sets_axes(axis.width = 0.1) +
+    ggforce::geom_parallel_sets_labels(colour = 'white') +
     theme_classic() +
     theme(legend.position = "none",
           line = element_blank()

@@ -33,8 +33,6 @@ This is a light-weight model engine mainly for text classification tasks written
 <img src ="package_logic/package_logic.png" width = "70%">
 
 
-
-
 # Options
 
 ```{r, eval = F}

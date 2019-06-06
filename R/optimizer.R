@@ -127,7 +127,7 @@ ga <-  R6::R6Class("optimizer",
 )
 
 
-#' GA
+#' fit_ga
 #' 
 #' @export
 fit_ga <- function(fun, hyper, param, folder = ".", ...){

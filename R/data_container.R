@@ -1,42 +1,7 @@
-#' create_text_container
-#' 
-#' workflow of R6 class
-#' 
-# create_text_container <- function(param){
-#   con <- textlearnR::text_container$new()
-#   con$set_param(param)
-#   con$get_load_data(param$data_path)
-#   con$transform_seq(parallel = T)
-#   return(con)
-# }
-
-#' create_seq_container
+#' data_container
 #' 
 #' @export
-create_seq_container <- function(params){
-  con <- text_container$new()
-  con$load_data(params$data_path)
-  con$set_param(params)
-  con$transform_seq(parallel = T)
-  return(con)
-}
-
-#' create_dtm_container
-#' 
-#' @export
-create_dtm_container <- function(params){
-  con <- text_container$new()
-  con$load_data(params$data_path)
-  con$set_param(params)
-  con$transform_dtm(mode = "binary")
-  return(con)
-}
-
-
-#' text_container
-#' 
-#' @export
-text_container <- R6::R6Class("container",
+data_container <- R6::R6Class("container",
   #inherit = keras_embed,
   private = list(
     param = list(
@@ -47,6 +12,7 @@ text_container <- R6::R6Class("container",
       seq_len = NULL,
       term_count_min = 5,
       doc_proportion_max  = .2
+      #sample = NULL
     ),
     create_id = function(){
       private$param$data_id <- private$param %>%
@@ -80,39 +46,36 @@ text_container <- R6::R6Class("container",
     get_param = function() {
       return(private$param)
     },
-    random_sample = function(n){
+    set_data = function(data = NULL) {
       
-      print(n)
+      if(!is.null(private$param$data_path)){
+        # data_name <- path %>% 
+        #   str_remove("\\..*?$") %>% 
+        #   str_extract("\\w+$")
+        data <- get(load(path))
+      }
       
-      self$data <- self$data %>%
-        dplyr::sample_n(n) %>%
-        dplyr::arrange(sample(1:n(), n()))
-    },
-    import_data = function(name, data) {
-      
+      # shuffle
       self$data <- data %>%
-        mutate(ids = 1:n()) %>%
-        dplyr::arrange(sample(ids, n()))
+        dplyr::arrange(sample(1:n(), n()))
       
-      if(!is.null(private$param$sample)){
-        if(nrow(self$data) > private$param$sample) {
-          self$random_sample(private$param$sample)
-        }
-      }
-      
-      private$param$data_name <- name
+      # subsample 
+      # if(is.null(private$param$sample)) private$param$sample <- nrow(data) + 1
+      # if(nrow(data) > private$param$sample) {
+      #   
+      #   self$data <- data %>%
+      #     dplyr::sample_n(n) %>%
+      #     dplyr::arrange(sample(1:n(), n()))
+      #   
+      #   message("subsampled")
+      #   
+      # } else {
+      #   
+      #   self$data <- data
+      #   message("subsampled not 1")
+      # }
+
       private$param$total_size <- nrow(self$data)
-      print(private$param$total_size)
-    },
-    load_data = function(path, name = NULL) {
-      if(is.null(name)){
-        data_name <- path %>% 
-          str_remove("\\..*?$") %>% 
-          str_extract("\\w+$")
-      } else {
-        data_name <- name
-      }
-      self$import_data(data = get(load(path)), name = data_name)
     },
     get_param_recom = function(){
       seq_porps <- self$data %>% 
@@ -142,7 +105,10 @@ text_container <- R6::R6Class("container",
       gridExtra::grid.arrange(seq_porps, token_freq, nrow = 2)
     },
     transform_tokenizer = function(){
-      self$vocab <- text2vec::itoken(self$data[[private$param$text]], ids = self$data$ids, progressbar = F) %>% 
+      self$vocab <- text2vec::itoken(
+        self$data[[private$param$text]], 
+        #ids = self$data$ids, 
+        progressbar = F) %>% 
         text2vec::create_vocabulary(.) %>% 
         text2vec::prune_vocabulary(
           term_count_min = private$param$term_count_min, 
@@ -157,7 +123,14 @@ text_container <- R6::R6Class("container",
       self$tokenizer <- keras::text_tokenizer(num_words = private$param$input_dim, lower = F, split = " ", char_level = F)
       keras::fit_text_tokenizer(self$tokenizer, self$vocab$term)
     },
+    transform_drop = function(drop = NULL){
+      target_col <- which(!(colnames(self$data) %in% drop))
+      self$x <- self$data[, target_col]
+    }, 
     transform_dtm = function(mode = "binary"){
+      
+      self$data <- self$data %>%
+        mutate(nwords = self$data[[private$param$text]] %>% str_count("\\w+"))
       
       self$transform_tokenizer()
       
@@ -169,13 +142,16 @@ text_container <- R6::R6Class("container",
       # glimpse(self$data)
       # print(private$param$text)
       # print(head(self$data[, private$param$text]))
+      self$data <- self$data %>%
+        mutate(nwords = self$data[[private$param$text]] %>% str_count("\\w+"))
       
       self$transform_tokenizer()
       
       if(parallel){
         
         self$x <- self$data %>%
-          split(1:nrow(.) %/% 10000) %>%
+          split(ntile(1:nrow(.), 100)) %>%
+          #split(1:nrow(.) %/% 10000) %>%
           furrr::future_imap(~{
             self$tokenizer %>%
               keras::texts_to_sequences(.x[[private$param$text]]) %>%

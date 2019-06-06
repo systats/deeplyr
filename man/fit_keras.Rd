@@ -4,7 +4,7 @@
 \alias{fit_keras}
 \title{keras_learner}
 \usage{
-fit_keras(self, private, ...)
+fit_keras(self, private, cv = F, ...)
 }
 \description{
 keras_learner

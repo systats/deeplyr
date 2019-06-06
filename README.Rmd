@@ -33,138 +33,6 @@ This is a light-weight model engine mainly for text classification tasks written
 <img src ="package_logic/package_logic.png" width = "70%">
 
 
-# Packages
-
-```{r}
-pacman::p_load(devtools, R6, tidyverse, purrr, furrr, RSQLite, 
-      # GA, dials,
-      jsonlite, text2vec, keras, reticulate,
-      plotROC, alluvial, ggforce, ggalluvial, ggparallel, survminer, survival)
-
-options(scipen = 999)
-devtools::load_all()
-# devtools::document()
-```
-# Data
-
-## DTM
-
-```{r}
-dparams <- list(
-  data_path = "sample_dat.Rdata",
-  text = "lemma",
-  input_dim = 2000,
-  seq_len = 150,
-  term_count_min = 5,
-  doc_proportion_max  = .1
-)
-
-# plan(multiprocess, workers = 4)
-# options(future.globals.maxSize = 1024^4)
-dc <- create_dtm_container(dparams)
-dc$report()
-#dc$get_param()
-```
-
-
-## Seqences
-
-```{r}
-dparams <- list(
-  data_path = "sample_dat.Rdata",
-  text = "lemma",
-  input_dim = 5000,
-  seq_len = 150,
-  term_count_min = 5,
-  doc_proportion_max  = .1 
-)
-
-# plan(multiprocess, workers = 4)
-# options(future.globals.maxSize = 1024^4)
-dc_seq <- create_seq_container(dparams)
-# dc$report()
-#dc_seq
-```
-
-
-# Backends
-
-## Ranger (RF)
-
-```{r}
-devtools::document()
-mparams <- list(
-  output_dim = 1,
-  target = "binary"
-)
-
-jo <- deeplyr::learner$new("ranger:binary")
-jo$set_param(mparams)
-jo$set_data(dc)
-jo$split(oos = F, val = F)
-
-jo$train()
-jo$test(dev = F)
-s <- jo$report()
-
-jo$glimpse()
-# jo$predict_dtm("make america great again! maga")
-```
-
-## XGBoost
-
-```{r}
-#devtools::document()
-mparams <- list(
-  output_dim = 1,
-  target = "binary"
-)
-
-jo <- deeplyr::learner$new("xgboost:binary")
-jo$set_param(mparams)
-jo$set_data(dc)
-jo$split(oos = F, val = F)
-
-jo$train()
-jo$test(dev = F)
-jo$test()
-s <- jo$report()
-
-jo$glimpse()
-```
-
-
-## Keras
-
-```{r}
-devtools::document()
-model_params <- list(
-  epochs = 1,
-  embed_dim = 128,
-  output_dim = 1, 
-  output_fun = "sigmoid", 
-  loss = "binary_crossentropy", 
-  optimizer = "adam", 
-  metrics = "accuracy",
-  target = "binary",
-  model = deeplyr::keras_multi_cnn,
-  model_name = "multi_cnn"
-)
-
-jo <- deeplyr::learner$new("keras:binary")
-jo$set_param(model_params)
-jo$set_data(dc_seq)
-jo$split(oos = F, val = T)
-
-jo$train()
-jo$test(dev = F)
-s <- jo$report()
-
-jo$glimpse()
-```
-
-
-
 
 
 # Options
@@ -190,33 +58,23 @@ nano ~/.Rprofile
 
 # Data
 
-```{r}
-# load("projects/dev-predict-participation/data/final_tweets.Rdata")
-# sample_dat <- final_tweets %>% 
-#   mutate(party_binary = case_when(party == "rep" ~ 1, party == "dem" ~ 0)) %>%
-#   select(linear = theta, binary = party_binary, category = race, lemma) %>% 
-#   sample_n(10000) %>% 
-#   glimpse
-# 
-# save(sample_dat, file = "sample_dat.Rdata")
+```{r, eval = F}
+load("projects/dev-predict-participation/data/batches/tweets_batched_250.Rdata")
+sample_dat <- tweets_batched %>%
+  mutate(party_binary = case_when(party == "rep" ~ 1, party == "dem" ~ 0)) %>%
+  select(linear = theta, binary = party_binary, category = race, lemma) %>%
+  sample_n(100000) %>%
+  glimpse
+
+#save(sample_dat, file = "sample_100000.Rdata")
 ```
 
 
 # Eval
 
-```{r}
+```{r, eval = F}
 dir("models/0a1505ace1d5ee9fb9a1191357b94865/")
 pred <- get(load("models/0a1505ace1d5ee9fb9a1191357b94865/model_preds.Rdata"))
 pred %>% glimpse
 ```
-
-## Binary
-
-```{r}
-devtools::document()
-
-
-
-```
-
 

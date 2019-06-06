@@ -11,8 +11,8 @@ list_metrics <- list(
     mape = Metrics::mape,
     smape = Metrics::smape,
     sle = Metrics::sle,
-    msle = Metrics::msle,
-    rmsle = Metrics::rmsle,
+    #msle = Metrics::msle,
+    #rmsle = Metrics::rmsle,
     rse = Metrics::rse,
     rrse = Metrics::rrse,
     rae = Metrics::rae
@@ -23,7 +23,7 @@ list_metrics <- list(
     fbeta_score = Metrics::fbeta_score,
     accuracy = Metrics::accuracy
   ),
-  loss = list(
+  prob = list(
     ll = Metrics::ll,
     logloss = Metrics::logLoss,
     auc = Metrics::auc

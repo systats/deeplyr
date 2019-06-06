@@ -1,16 +1,34 @@
+#' @export
+p_integer <- function(name, range){
+   dials::new_quant_param(
+      type = "integer",
+      inclusive = c(T, T),
+      range = range,
+      label = c(name = glue::glue("# {name}"))
+   ) 
+}
+
+#' @export
+p_double <- function(name, range){
+   dials::new_quant_param(
+      type = "double",
+      inclusive = c(T, T),
+      range = range,
+      label = c(name = glue::glue("# {name}"))
+   ) 
+}
+
 #' GA
 #' 
 #' @export
 ga <-  R6::R6Class("optimizer",
  #inherit = splitter, 
  private = list(
-   x = NULL, 
-   data = NULL,
-   param = NULL,
+   fun = NULL,
    hyper = NULL,
+   param = NULL,
    bounds = NULL,
-   mkdir = NULL,
-   backend = NULL,
+   folder = NULL,
    normalize_param = function(x){ 
      ### e.g. dropout ratios
      smaller_one <- function(x) ifelse(x <= 1, T, F)
@@ -41,31 +59,34 @@ ga <-  R6::R6Class("optimizer",
  public = list(
    ### Initalize variables
    ### Main Function
-   initialize = function(mkdir, backend) {
+   initialize = function(folder) {
      ### Combine and add parameters
      
-     private$mkdir <- mkdir
-     private$backend <- backend
+     private$folder <- folder
      
      if(!dir.exists("models")){
        dir.create("models")
      }
-     if(!dir.exists("models/results")){
-       dir.create(glue::glue("models/{mkdir}"))
+     if(!dir.exists(glue::glue("models/{folder}"))){
+       dir.create(glue::glue("models/{folder}"))
      }
+   },
+   set = function(fun, hyper, param){
+      self$set_fun(fun)
+      self$set_hyper(hyper)
+      self$set_param(param)
+   },
+   set_fun = function(fun){
+      private$fun <- fun
+   },
+   set_hyper = function(hyper){
+      private$hyper <- hyper
    },
    set_param = function(param){
      private$param <- param
    },
    get_param = function(){
      return(private$param)
-   },
-   set_hyper = function(hyper){
-     private$hyper <- hyper
-   },
-   set_data = function(data, x){
-     private$data <- data
-     private$x <- x
    },
    get_ga_bounds = function(){
      private$hyper %>% 
@@ -82,44 +103,16 @@ ga <-  R6::R6Class("optimizer",
      ### Mapping dial parameters to GA
      private$bounds <- self$get_ga_bounds()
      
-     fit_model <- function(params, data, x, backend, ...){
-       jo <- deeplyr::learner$new(backend)
-       jo$set_param(params)
-       jo$set_data(data, x)
-       jo$split(oos = F, val = F, by_index = "split")
-       
-       jo$train(cv = F)
-       jo$test()
-       out <- jo$report(...)
-       return(out)
-     }
-     
      ### Fitting fun
      run_model <- function(x) { 
-       
        # floor doubles to ineteger
        new_param <- private$normalize_param(x) %>%
          purrr::set_names(private$bounds$name)
        
        # Here are the static param!!!
-       temp <- c(private$param, new_param)
-       # print(pt)
-       # print(private$data)
-       
-       out <- fit_model(
-         param = temp, 
-         data = private$data, 
-         x = private$x, 
-         backend = private$backend, 
-         mkdir = private$mkdir,
-         return_value = T
-       )
-       
-       return(out$accuracy)
+       out <- private$fun(c(private$param, new_param), private$folder)
+       return(out)
      }
-     
-     print(private$bounds$lower)
-     print(private$bounds$upper)
      
      ### Main Run
      ga_out <- GA::ga(
@@ -132,3 +125,14 @@ ga <-  R6::R6Class("optimizer",
    }
  )
 )
+
+
+#' GA
+#' 
+#' @export
+fit_ga <- function(fun, hyper, param, folder = ".", ...){
+   g <- deeplyr::ga$new(folder)
+   g$set(fun, hyper, param)
+   g$optimize(...)
+   return(g)
+}

@@ -186,10 +186,10 @@ learner <- R6::R6Class("learner",
         mutate(metrics = list(self$perform)) %>%
         mutate(timestamp = as.character(Sys.time()))
     },
-    report = function(mkdir = "", return_value = F){
+    report = function(folder = ".", return_value = F){
       
-      if(mkdir != "") {
-        private$new_path <- paste0("models/", mkdir, "/", private$param$model_id)
+      if(folder != "") {
+        private$new_path <- paste0("models/", folder, "/", private$param$model_id)
       } else {
         private$new_path <- glue::glue("models/{private$param$model_id}")
       }

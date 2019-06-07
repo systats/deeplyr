@@ -11,7 +11,8 @@ backends <- R6::R6Class(
         imap_dfc( ~ {
           tibble(value = .x(self$preds$target, self$preds$pred)[1]) %>%
             set_names(.y)
-        })
+        }) %>% 
+        round(3)
     },
     eval_metrics_linear = function() {
       self$perform  <- list_metrics[["linear"]] %>% private$eval_metrics()
@@ -25,7 +26,8 @@ backends <- R6::R6Class(
           tibble(value = .x(self$preds$target, self$preds$prob)[1]) %>%
             set_names(.y)
         }) %>%
-        bind_cols(self$perform)
+        round(3) %>%
+        bind_cols(self$perform) 
     },
     eval_metrics_categorical = function() {
       self$perform  <- list_metrics[["categorical"]]  %>% private$eval_metrics()

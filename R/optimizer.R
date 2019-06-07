@@ -1,22 +1,44 @@
 #' @export
-p_integer <- function(name, range){
+p_integer <- function(low, high){
    dials::new_quant_param(
       type = "integer",
       inclusive = c(T, T),
-      range = range,
-      label = c(name = glue::glue("# {name}"))
+      range = c(low, high),
+      label = c(name = "")
    ) 
 }
 
 #' @export
-p_double <- function(name, range){
+p_double <- function(low, high){
    dials::new_quant_param(
       type = "double",
       inclusive = c(T, T),
-      range = range,
-      label = c(name = glue::glue("# {name}"))
+      range = c(low, high),
+      label = c(name = "")
    ) 
 }
+
+#' @export
+info <- function(param, perform) {
+   
+   param <- param %>% 
+      purrr::imap_chr(~{glue::glue("{.y}={.x}")}) %>% 
+      c(" ", .) %>%
+      paste(collapse = " ")
+   
+   perform <- perform %>% 
+      purrr::imap_chr(~{glue::glue("{.y}={.x}")}) %>% 
+      c(" ", .) %>%
+      paste(collapse = " ")
+   
+   crayon::blue("GA ") %+% 
+      crayon::green(crayon::italic(glue::glue("[{Sys.time()}]"))) %+%
+      param %+%
+      crayon::blue(perform) %+% 
+      "\n" %>%
+      cat
+}
+
 
 #' GA
 #' 
@@ -27,6 +49,8 @@ ga <-  R6::R6Class("optimizer",
    fun = NULL,
    hyper = NULL,
    param = NULL,
+   metric = NULL,
+   minimize = NULL, 
    bounds = NULL,
    folder = NULL,
    normalize_param = function(x){ 
@@ -71,10 +95,15 @@ ga <-  R6::R6Class("optimizer",
        dir.create(glue::glue("models/{folder}"))
      }
    },
-   set = function(fun, hyper, param){
+   set = function(fun, hyper, param, metric, minimize){
       self$set_fun(fun)
       self$set_hyper(hyper)
       self$set_param(param)
+      self$set_eval(metric, minimize)
+   },
+   set_eval = function(metric, minimize){
+     private$metric <- metric
+     private$minimize <- minimize
    },
    set_fun = function(fun){
       private$fun <- fun
@@ -90,10 +119,9 @@ ga <-  R6::R6Class("optimizer",
    },
    get_ga_bounds = function(){
      private$hyper %>% 
-       purrr::map_dfr(~{
+       purrr::imap_dfr(~{
          tibble(
-           name = .x$label %>% names, 
-           desc = .x$label, 
+           name = .y,
            lower = .x$range$lower, 
            upper = .x$range$upper
          )
@@ -109,8 +137,15 @@ ga <-  R6::R6Class("optimizer",
        new_param <- private$normalize_param(x) %>%
          purrr::set_names(private$bounds$name)
        
-       # Here are the static param!!!
-       out <- private$fun(c(private$param, new_param), private$folder)
+       perform <- private$fun(.x = c(private$param, new_param), folder = private$folder)
+       
+       info(new_param, perform)
+       
+       if(private$minimize){
+         out <- perform[[private$metric]] * -1
+       } else {
+         out <- perform[[private$metric]]
+       }
        return(out)
      }
      
@@ -130,9 +165,9 @@ ga <-  R6::R6Class("optimizer",
 #' fit_ga
 #' 
 #' @export
-fit_ga <- function(fun, hyper, param, folder = ".", ...){
+fit_ga <- function(fun, hyper, param, metric, minimize, folder = ".", ...){
    g <- deeplyr::ga$new(folder)
-   g$set(fun, hyper, param)
+   g$set(fun, hyper, param, metric, minimize)
    g$optimize(...)
    return(g)
 }

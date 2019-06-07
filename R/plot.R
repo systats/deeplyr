@@ -1,8 +1,8 @@
 #' @export
 plot_scatter <- function(actual, pred){
   
-  tibble(actual, pred) %>%
-    ggplot(aes(actual, pred)) +
+  tibble(pred, actual) %>%
+    ggplot(aes(pred, actual)) +
     geom_jitter(alpha = .5) +
     geom_smooth(method = "lm", se = F) +
     geom_smooth(color = "red") +

@@ -4,7 +4,7 @@
 \alias{fit_ga}
 \title{fit_ga}
 \usage{
-fit_ga(fun, hyper, param, folder = ".", ...)
+fit_ga(fun, hyper, param, metric, minimize, folder = ".", ...)
 }
 \description{
 fit_ga

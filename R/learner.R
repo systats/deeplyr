@@ -202,8 +202,9 @@ learner <- R6::R6Class("learner",
       private$save_model_container()
       
       ### save plots
+      ggsave_pos <- possibly(ggsave, NULL)
       self$plots %>% 
-        iwalk(~ggsave(.x, file = glue::glue("{private$new_path}/{.y}.png")))
+        iwalk(~ggsave_pos(.x, file = glue::glue("{private$new_path}/{.y}.png")))
       
       ### return value?
       # performance evaluation

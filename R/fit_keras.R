@@ -72,12 +72,20 @@ fit_keras <- function(
   # validation_split = .2
   if(!is.null(private$x_val)){
     val_data <- list(private$x_val, private$y_val)
+    validation_split <- NULL
   } else {
+    validation_split <- .2
     val_data = NULL
   }
   
   if(is.null(private$param$verbose)) {
     private$param$verbose <- 1
+  }
+
+  if(is.null(private$param$callbacks)){
+    callbacks <- c(keras::callback_early_stopping(monitor = "val_loss", patience = 1, mode = "auto"))
+  } else {
+    callbacks <- NULL
   }
   
   if(cv){
@@ -119,8 +127,8 @@ fit_keras <- function(
       #shuffle = T,
       class_weight = private$param$class_weights,
       epochs = private$param$epochs, # old: x$epochs %error%  in combination with early stoping: free lunch!
-      #callbacks = c(keras::callback_early_stopping(monitor = "val_loss", patience = 1, mode = "auto")), 
-      #validation_split = .2
+      callbacks = callbacks, 
+      validation_split = validation_split,
       validation_data = val_data, 
       verbose = private$param$verbose
     ) 

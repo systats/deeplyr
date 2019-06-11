@@ -2,20 +2,20 @@
 #' @export
 list_metrics <- list(
   linear = list(
-    se = Metrics::se,
     mse = Metrics::mse,
     rmse = Metrics::rmse,
-    ae = Metrics::ae,
     mae = Metrics::mae,
-    ape = Metrics::ape,
-    mape = Metrics::mape,
-    smape = Metrics::smape,
-    sle = Metrics::sle,
-    #msle = Metrics::msle,
-    #rmsle = Metrics::rmsle,
-    rse = Metrics::rse,
-    rrse = Metrics::rrse,
-    rae = Metrics::rae
+    mape = Metrics::mape
+    # se = Metrics::se,
+    # ae = Metrics::ae,
+    # ape = Metrics::ape,
+    # smape = Metrics::smape
+    # sle = Metrics::sle,
+    # msle = Metrics::msle,
+    # rmsle = Metrics::rmsle,
+    # rse = Metrics::rse,
+    # rrse = Metrics::rrse,
+    # rae = Metrics::rae
   ),
   binary = list(
     precision = Metrics::precision,

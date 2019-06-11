@@ -32,7 +32,6 @@ plan(multiprocess)
 #tweets <- readRDS("sample.rds")
 ```
 
-
 ```{r}
 range01 <- function(x){(x-min(x, na.rm = T))/(max(x, na.rm = T)-min(x, na.rm = T))}
 load("tweets_batched_250.Rdata")
@@ -71,8 +70,6 @@ tweets <- tweets_batched %>%
 # tweets %>% 
 #   sample_n(10000) %>% 
 #   dataMaid::makeDataReport(data = ., output = "html", file = "report_y", vol = 1, replace = T)
-
-
 # saveRDS(tweets, file = "../../test/sample.rds")
 
 tweets %>%
@@ -88,7 +85,7 @@ library(deeplyr)
 
 dp <- list(
   text = "lemma",
-  input_dim = 5000,
+  input_dim = 30000,
   seq_len = 250,
   term_count_min = 3,
   doc_proportion_max  = .1
@@ -98,9 +95,18 @@ options(future.globals.maxSize = 1024^4)
 sc <- create_seq_container(param = dp, data = tweets, parallel = F)
 sc$data %>% glimpse
 sc$x[1:5, 1:10]
-#
 sc$report()
+
+
+
+# 30000
+sc <- get(load("data/container/718fb6c9420e7c14e36fc84e305d5721/data_container.Rdata"))
+sc$get_param()
+
+
+# 5000
 # sc <- get(load("data/container/c1989b85dfce02f8537ecb802cc16272/data_container.Rdata"))
+# sc$get_param()
 ```
 
 # Fit them all
@@ -216,7 +222,9 @@ f2$plots$surv
 
 # GA
 
-## One model
+## Theta
+
+### One model
 
 ```{r}
 devtools::document()
@@ -256,7 +264,7 @@ grid1 <- fit_ga(
 ```
 
 
-## Many Models
+### Many Models
 
 ```{r}
 model_inputs <- list(
@@ -268,15 +276,16 @@ model_inputs <- list(
       dropout = p_double(.1, .5)
     )
   ),
-  cnn_lstm = list(
-    model = deeplyr::keras_cnn_lstm,
-    hyper = list(
-      embed_dim = p_integer(64, 256),
-      n_filters = p_integer(128, 256),
-      lstm_dim = p_integer(32, 128),
-      dropout = p_double(.1, .5)
-    )
-  ),
+  # cnn_lstm = list(
+  #   model = deeplyr::keras_cnn_lstm,
+  #   hyper = list(
+  #     #epochs = p_integer(1, 3),
+  #     embed_dim = p_integer(128, 256),
+  #     n_filters = p_integer(64, 128),
+  #     lstm_dim = p_integer(32, 128),
+  #     dropout = p_double(.1, .5)
+  #   )
+  # )
   multi_cnn = list(
     model = deeplyr::keras_multi_cnn,
     hyper = list(
@@ -287,6 +296,7 @@ model_inputs <- list(
   pooled_gru = list(
     model = deeplyr::keras_pooled_gru,
     hyper = list(
+      embed_dim = p_integer(64, 256),
       gru_dim = p_integer(32, 180),
       gru_drop = p_double(.1, .5)
     )
@@ -315,8 +325,8 @@ model_inputs %>%
       fun = my_fun, 
       hyper = .x$hyper,
       param = static, 
-      folder = "multi_model_grid",
-      metric = "mse",
+      folder = "multi_model_grid2",
+      metric = "mae",
       minimize = T,
       popSize = 10, 
       maxiter = 3, # main run argument 
@@ -329,7 +339,7 @@ model_inputs %>%
 
 
 
-# Load
+### Load
 
 ```{r}
 load_grid <- function(folder){
@@ -340,11 +350,29 @@ load_grid <- function(folder){
     mutate(metrics = metrics %>% map(bind_cols))
 }
 
-load_grid(folder = "first_simple_mlp")%>%
+grid_multi1 <- load_grid(folder = "multi_model_grid")%>%
   unnest(metrics) %>% 
-  arrange(rmse) %>%
+  arrange(mae) %>%
+  #ggplot(aes(x = mse)) + geom_histogram()
   glimpse
 
+grid_multi2 <- load_grid(folder = "multi_model_grid2")%>%
+  unnest(metrics) %>% 
+  arrange(mae) %>%
+  #ggplot(aes(x = mse)) + geom_histogram()
+  glimpse
+
+#save(grid_multi, file = "grid_multi.Rdata")
+
+grid_multi1 %>%
+  bind_rows(grid_multi2) %>% 
+  ggplot(aes(model_name, mae, fill = model_name)) +
+  geom_violin(color = NA) +
+  facet_wrap(~input_dim)
+```
+
+
+```{r}
 load_model <- function(id, folder = NULL){
   if(!is.null(folder)) folder <- paste0(folder, "/")
   path <- glue::glue("models/{folder}{id}/model_container.Rdata")
@@ -352,9 +380,138 @@ load_model <- function(id, folder = NULL){
   return(get(load(path)))
 }
 
-m <- load_model( id = "6ccc25545884061d1fd13fb41bddeacf", folder = "first_simple_mlp")
+m <- load_model( id = "0e08842aa52c7fb89f9ce218e13cb000", folder = "multi_model_grid")
+# save(m, file = "best_model.Rdata")
 m$preds %>% plot_linear()
+m$perform
+m$results
+m$preds %>% 
+  rename(actual = target) %>%
+  ggplot(aes(pred, actual)) +
+  #geom_jitter(alpha = .1) +
+  geom_bin2d(alpha = .5) +
+  #geom_density_2d()+ 
+  geom_smooth(method = "lm", se = F) +
+  geom_smooth(color = "red") +
+  geom_rug(position = "jitter", alpha = .05) +
+  scale_fill_viridis_c(direction = -1, option = "B") +
+  theme_classic() +
+  ggtitle("y = theta, MAE = .56")
+
+# m$perform
+# class(m)
+# methods(print)
+# 
+# print.learner <- function(x) return(x)
+# rm(print.learner)
+# m %>%
+#   as.list
+#   map(1)
 ```
+
+
+## Party
+
+```{r}
+devtools::document()
+model_inputs <- list(
+  simple_mlp = list(
+    model = deeplyr::keras_simple_mlp,
+    hyper = list(
+      embed_dim = p_integer(64, 256),
+      dense_dim = p_integer(10, 100),
+      dropout = p_double(.1, .5)
+    )
+  ),
+  cnn_lstm = list(
+    model = deeplyr::keras_cnn_lstm,
+    hyper = list(
+      #epochs = p_integer(1, 3),
+      embed_dim = p_integer(128, 256),
+      n_filters = p_integer(64, 128),
+      lstm_dim = p_integer(32, 128),
+      dropout = p_double(.1, .5)
+    )
+  ),
+  multi_cnn = list(
+    model = deeplyr::keras_multi_cnn,
+    hyper = list(
+      embed_dim = p_integer(64, 256),
+      n_filters = p_integer(64, 256)
+    )
+  ),
+  pooled_gru = list(
+    model = deeplyr::keras_pooled_gru,
+    hyper = list(
+      embed_dim = p_integer(64, 256),
+      gru_dim = p_integer(32, 180),
+      gru_drop = p_double(.1, .5)
+    )
+  )
+)
+
+model_inputs %>% 
+  iwalk(~{
+  
+    static <- list(
+      output_dim = 1,
+      batch_size = 100,
+      epochs = 1, 
+      class_weights = T,
+      target = "party_2",
+      model  = .x$model,
+      model_name = .y
+    )
+    
+    my_fun <- function(.x, folder){
+      m <- fit_model("keras:binary", param = .x, container = sc, 
+                     oos = T, val = T, id = "voter_id", folder = folder)
+      return(m$perform)
+    } 
+    
+    fit_ga(
+      fun = my_fun, 
+      hyper = .x$hyper,
+      param = static, 
+      folder = "grid_party_binary_1",
+      metric = "accuracy",
+      minimize = F,
+      popSize = 10, 
+      maxiter = 3, # main run argument 
+      run = 3
+    )
+  })
+
+sc$get_param()
+```
+
+
+```{r}
+grid_multi_binary1 <- load_grid(folder = "grid_party_binary_1")%>%
+  unnest(metrics) %>% 
+  arrange(desc(accuracy)) %>%
+  #ggplot(aes(x = mse)) + geom_histogram()
+  glimpse
+
+grid_multi_binary1 %>%
+  ggplot(aes(model_name, accuracy)) +
+  geom_violin()
+  
+```
+
+
+```{r}
+
+
+m_b1 <- load_model( id = "8c6087546d1d7c463495af7fcf394fb3", folder = "grid_party_binary_1")
+m_b1$plots
+m_b1$results
+```
+
+
+
+
+
 
 
 

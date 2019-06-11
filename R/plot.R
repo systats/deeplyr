@@ -91,7 +91,7 @@ plot_roc_multi <- function(actual, pred, prob){
     geom_abline(a = 0, b = 1) +
     geom_point() +
     theme_classic() +
-    labs(x = "false_positive_fraction (1 - Sensitivity)", y = "true_positive_fraction (Specificity)")
+    labs(x = "FPR (1 - Sensitivity)", y = "TPR (Specificity)")
 }
 
 #' plot_confusion

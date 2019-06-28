@@ -1,0 +1,33 @@
+---
+title: "test"
+output: html_document
+---
+
+
+
+# Follower
+
+
+```{r}
+# devtools::install_github("systats/deeplyr")
+# features <- simon$con %>% get_users() %>% 
+#   select(follow, contains("count"))
+pacman::p_load(tidyverse, keras)
+load("features.Rdata")
+
+mparams <- list(
+  output_dim = 1
+)
+
+library(deeplyr)
+jo <- learner$new("xgboost:binary")
+jo$set_param(mparams)
+jo$set_data(x = features[,-1], y = features$follow)
+jo$set_split()
+jo$train()
+jo$test(dev = F)
+
+jo$eval$preds
+jo$eval$plots
+jo$eval$perform
+```

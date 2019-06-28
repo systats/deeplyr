@@ -9,8 +9,6 @@ evaluator <- R6::R6Class("eval",
    target = NULL,
    pred = NULL,
    # functions
-   eval_model = NULL,
-   plot_model = NULL,
    eval_metrics = function(metrics){
      metrics %>%
        imap_dfc( ~ {
@@ -45,6 +43,7 @@ evaluator <- R6::R6Class("eval",
               model_id = private$model_id)
      
      private$eval_metrics_linear()
+     self$plots <- plot_linear(self$preds)
    },
    eval_binary = function() {
      
@@ -56,10 +55,9 @@ evaluator <- R6::R6Class("eval",
      
      private$eval_metrics_binary()
      private$eval_metrics_prob()
-     
+     self$plots <- plot_binary(self$preds)
    },
    eval_categorical = function() {
-     
      
      if(length(private$pred) == length(private$target)) {
        self$preds <- tibble(pred = private$pred) %>%
@@ -79,6 +77,7 @@ evaluator <- R6::R6Class("eval",
      }
      
      private$eval_metrics_categorical()
+     self$plots <- plot_categorical(self$preds)
    }
  ),
  public = list(
@@ -89,22 +88,6 @@ evaluator <- R6::R6Class("eval",
    # functions
    initialize = function(objective = "binary") {
      private$objective <- objective
-     
-     ### Metrics and Performance Grafics
-     if (private$objective %in% c("linear", "mixture")) {
-       private$eval_model <- private$eval_linear
-       private$plot_model <- plot_linear
-     }
-     
-     if (private$objective == "categorical") {
-       private$eval_model <- private$eval_categorical
-       private$plot_model <- plot_categorical
-     }
-     
-     if (private$objective == "binary") {
-       private$eval_model <- private$eval_binary
-       private$plot_model <- plot_binary
-     } 
    },
    eval = function(target, pred, model_id = NULL){
      private$target <- target
@@ -113,8 +96,18 @@ evaluator <- R6::R6Class("eval",
      
      private$metrics <- list_metrics[[private$objective]] # linear, binary, categorical
      
-     private$eval_model()
-     self$plots <- private$plot_model(self$preds)
+     ### Metrics and Performance Grafics
+     if (private$objective %in% c("linear", "mixture")) {
+        private$eval_linear()
+     }
+     
+     if (private$objective == "categorical") {
+        private$eval_categorical()
+     }
+     
+     if (private$objective == "binary") {
+        private$eval_binary()
+     }
    }
  )
 )

@@ -525,7 +525,8 @@ m_b1$results
 
 ```{r}
 pacman::p_load(tidyverse, purrr, keras)
-devtools::document()
+#devtools::document()
+library(deeplyr)
 # save(features, file = "features.Rdata")
 load("features.Rdata")
 # features <- simon$con %>% get_users() %>% 

@@ -119,7 +119,7 @@ plot_confusion <- function(actual, pred){
     coord_equal() + 
     labs(x = "Real value y", y = "Predicted value y hat") +
     ggplot2::geom_text(aes(label = label, colour = text_color)) +
-    scale_color_manual(values = c("red", "green")) +
+    scale_color_manual(values = c("black", "white")) +
     theme_classic() +
     theme(legend.position = "none") +
     guides(colour = F, fill = F) +

@@ -516,3 +516,35 @@ m_b1$results
 
 
 
+
+
+
+
+
+
+
+```{r}
+pacman::p_load(tidyverse, purrr, keras)
+devtools::document()
+# save(features, file = "features.Rdata")
+load("features.Rdata")
+# features <- simon$con %>% get_users() %>% 
+#   select(follow, contains("count"))
+
+mparams <- list(
+  output_dim = 1
+)
+
+library(deeplyr)
+jo <- learner$new("xgboost:binary")
+jo$set_param(mparams)
+jo$set_data(x = features[,-1], y = features$follow)
+jo$set_split()
+jo$train()
+jo$test(dev = F)
+
+jo$eval$preds
+jo$eval$plots
+jo$eval$perform
+```
+

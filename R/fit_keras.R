@@ -25,9 +25,9 @@ fit_keras <- function(
 ){
 
   #class_weights <- compute_classweights(y_train, private$output_dim)
-  if(!is.null(private$param$class_weights)){
-    if(length(colnames(private$y_train)) == 0){
-      private$param$class_weights <- private$y_train %>%
+  if(!is.null(self$param$class_weights)){
+    if(length(colnames(self$splits$train$y)) == 0){
+      self$param$class_weights <- self$splits$train$y %>%
         tibble(var = .) %>%
         count(var) %>%
         mutate(n = max(n)/n) %>%
@@ -35,7 +35,7 @@ fit_keras <- function(
         as.list %>%
         set_names(c("0", "1"))
     } else {
-      private$param$class_weights <- private$y_train %>%
+      self$param$class_weights <- self$splits$train$y %>%
         as_tibble() %>%
         set_names(1:length(.)) %>%
         imap(~{
@@ -50,39 +50,39 @@ fit_keras <- function(
         c(list(`0` = 1), .)
     }
   } else {
-    private$param$class_weights <- NULL
+    self$param$class_weights <- NULL
   }
   
-  if(is.null(private$param$batch_size)) private$param$batch_size <- 30
+  if(is.null(self$param$batch_size)) self$param$batch_size <- 30
   
-  model_param <- get_model_param(private$param$model, private$param)
-  private$param <- complete_param(private$param, model_param)
+  model_param <- get_model_param(self$param$model, self$param)
+  self$param <- complete_param(self$param, model_param)
   
-  private$param$model <- do.call(private$param$model, model_param)
+  self$param$model <- do.call(self$param$model, model_param)
   
   if(private$objective != "mixture"){
-    private$param$model %>%
+    self$param$model %>%
       keras::compile(
-        loss = private$param$loss,
-        metric = private$param$metric,
-        optimizer = private$param$optimizer
+        loss = self$param$loss,
+        metric = self$param$metric,
+        optimizer = self$param$optimizer
       ) 
   }
   
   # validation_split = .2
-  if(!is.null(private$x_val)){
-    val_data <- list(private$x_val, private$y_val)
+  if(!is.null(self$splits$val$x)){
+    val_data <- list(self$splits$val$x, self$splits$val$y)
     validation_split <- NULL
   } else {
     validation_split <- .2
     val_data = NULL
   }
   
-  if(is.null(private$param$verbose)) {
-    private$param$verbose <- 1
+  if(is.null(self$param$verbose)) {
+    self$param$verbose <- 1
   }
 
-  if(is.null(private$param$callbacks)){
+  if(is.null(self$param$callbacks)){
     callbacks <- c(keras::callback_early_stopping(monitor = "val_loss", patience = 1, mode = "auto"))
   } else {
     callbacks <- NULL
@@ -100,13 +100,13 @@ fit_keras <- function(
         
         ind <- which(cv_dat$folds == .y) 
         
-        x_val <- private$x_train[ind,] %>% as.matrix()
-        y_val <- private$y_train[ind,]
+        x_val <- self$splits$train$x[ind,] %>% as.matrix()
+        y_val <- self$splits$train$y[ind,]
         
-        x_train <- private$x_train[-ind,] %>% as.matrix()
-        y_train <- private$y_train[-ind,]
+        x_train <- self$splits$train$x[-ind,] %>% as.matrix()
+        y_train <- self$splits$train$y[-ind,]
         
-        private$param$model %>%
+        self$param$model %>%
           fit(
             x = x_train,
             y = y_train,
@@ -120,17 +120,17 @@ fit_keras <- function(
   } else {
     ### Normal Training Mode
     keras_param <- list(
-      private$param$model, 
-      private$x_train, 
-      private$y_train, 
-      batch_size = private$param$batch_size,
+      self$param$model, 
+      self$splits$train$x, 
+      self$splits$train$y, 
+      batch_size = self$param$batch_size,
       #shuffle = T,
-      class_weight = private$param$class_weights,
-      epochs = private$param$epochs, # old: x$epochs %error%  in combination with early stoping: free lunch!
+      class_weight = self$param$class_weights,
+      epochs = self$param$epochs, # old: x$epochs %error%  in combination with early stoping: free lunch!
       callbacks = callbacks, 
       validation_split = validation_split,
       validation_data = val_data, 
-      verbose = private$param$verbose
+      verbose = self$param$verbose
     ) 
     
     do.call(keras::fit, compact(keras_param))
@@ -138,7 +138,7 @@ fit_keras <- function(
 
   #print(glimpse(keras_param))
 
-  return(private$param$model)
+  return(self$param$model)
 }
 
 #' @export
@@ -161,7 +161,7 @@ predict_mixture_keras <- function(model, x_test, output_dim, mix_dim){
 }
 
 
-# class_weights <- private$y_train %>%
+# class_weights <- self$splits$train$y %>%
 #   tibble(var = .) %>%
 #   count(var) %>%
 #   mutate(n = max(n)/n) %>%

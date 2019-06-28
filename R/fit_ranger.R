@@ -1,10 +1,10 @@
 #' @export
 fit_ranger_linear <- function(self, private, ...){
   
-  x_train <- private$x_train %>%
+  x_train <- self$splits$train$x %>%
     as_tibble() %>%
     set_names(paste0("V",colnames(.))) %>%
-    mutate(y = as.factor(private$y_train))
+    mutate(y = as.factor(self$splits$train$y))
   
   return(ranger::ranger(y ~ ., data = x_train, importance = "impurity_corrected"))
 }
@@ -12,10 +12,10 @@ fit_ranger_linear <- function(self, private, ...){
 #' @export
 fit_ranger_binary <- function(self, private, ...){
   
-  x_train <- private$x_train %>%
+  x_train <- self$splits$train$x %>%
     as_tibble() %>%
     set_names(paste0("V",colnames(.))) %>%
-    mutate(y = as.factor(private$y_train))
+    mutate(y = as.factor(self$splits$train$y))
   
   return(ranger::ranger(y ~ ., data = x_train, probability = T, importance = "impurity_corrected"))
 }
@@ -23,10 +23,10 @@ fit_ranger_binary <- function(self, private, ...){
 #' @export
 fit_ranger_categorical <- function(self, private, ...){
   
-  x_train <- private$x_train %>%
+  x_train <- self$splits$train$x %>%
     as_tibble() %>%
     set_names(paste0("V",colnames(.))) %>%
-    mutate(y = as.factor(private$y_train))
+    mutate(y = as.factor(self$splits$train$y))
   
   return(ranger::ranger(y ~ ., data = x_train, probability = T, importance = "impurity_corrected"))
 }

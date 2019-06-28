@@ -1,0 +1,126 @@
+---
+title: "Splitter"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+# Packages
+
+```{r}
+pacman::p_load(tidyverse, purrr, furrr)
+```
+
+
+# Main Function
+
+```{r}
+split_sample <- function(x, y, id = NULL, val = F, oos = F, balance = NULL){
+  sp <- split_mod$new()
+  sp$set(x, y, id)
+  sp$split(val, oos, balance)
+  return(sp)
+}
+```
+
+
+
+# Test Data
+
+```{r}
+tdf <- tibble(
+  id = sample(1:100, 1000, replace = T),
+  split_id = sample(1:3, size = 1000, prob = c(.8, .1, .1), replace = T),
+  x1 = rnorm(1000),
+  x2 = rnorm(1000),
+  y = sample(0:1, size = 1000, prob = c(.6, .4), replace = T) #2*x1 + 2*x2 + rnorm(1000)
+) %>% 
+  select(split_id, y, id, contains("x")) %>%
+  glimpse
+```
+
+
+# Simple
+
+```{r}
+nn <- split_sample(x = tdf[,-1:-2], y = tdf$y) %>% glimpse
+nn$param
+```
+
+
+# Validation
+
+```{r}
+split_sample(x = tdf[,-1:-2], y = tdf$y, val = T) %>% glimpse
+```
+
+
+# Out of Sample 
+
+```{r}
+split_sample(x = tdf[,-1:-2], y = tdf$y, id = tdf$id, oos = T,) %>% glimpse
+```
+
+
+# Out of Sample + Validation
+
+```{r}
+out <- split_sample(x = tdf[,-1:-2], y = tdf$y, id = tdf$id, val = T, oos = T) 
+
+# tests
+table(out$splits$train$x[,1] %in% out$splits$test$x[,1])
+table(out$splits$train$x[,1] %in% out$splits$vale$x[,1])
+
+out$splits %>% walk(glimpse)
+```
+
+
+```{r}
+out$splits$train$x %>% head(3)
+out$splits$train$y %>% head(3)
+out$splits$test$x %>% head(3)
+out$splits$test$y %>% head(3)
+out$splits$val$x %>% head(3)
+out$splits$val$y %>% head(3)
+```
+
+
+# Split by split_id
+
+```{r}
+split_sample(x = tdf[,-1:-2], y = tdf$y, id = tdf$split_id, val = F) 
+split_sample(x = tdf[,-1:-2], y = tdf$y, id = tdf$split_id, val = T) 
+```
+
+# Balancing Test
+
+```{r}
+nn <- split_sample(x = tdf[,-1:-2], y = tdf$y, balance = 3, val = F) %>% glimpse
+nn$param
+```
+
+
+
+```{r}
+if(balance == .x){
+ y_min <- tdf$y %>% 
+   dplyr::tibble(y = .) %>% 
+   dplyr::count(y, sort = T) %>% 
+   dplyr::slice(2) %>% 
+   dplyr::pull(n)
+ 
+ x_sub <- tdf[,-1:-2] %>% 
+   dplyr::mutate(y = tdf$y) %>%
+   dplyr::group_by(y) %>% 
+   dplyr::sample_n(y_min) %>% 
+   dplyr::ungroup() %>% 
+   sample_n(n())
+ 
+ y <- x_sub$y
+ x <- x_sub$x %>% dplyr::select(-y)
+}
+```
+

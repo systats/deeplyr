@@ -20,6 +20,8 @@ create_seq_container <- function(param, data = NULL, parallel = T){
   return(d)
 }
 
+
+
 #' create_dtm_container
 #' 
 #' @export

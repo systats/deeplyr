@@ -8,6 +8,7 @@ evaluator <- R6::R6Class("eval",
    model_id = NA, 
    target = NULL,
    pred = NULL,
+   id = NULL,
    # functions
    eval_metrics = function(metrics){
      metrics %>%
@@ -39,8 +40,11 @@ evaluator <- R6::R6Class("eval",
    eval_linear = function() {
      
      self$preds <- tibble(pred = private$pred) %>%
-       mutate(target = private$target,
-              model_id = private$model_id)
+        mutate(
+           target = private$target,
+           id = private$id,
+           model_id = private$model_id
+        )
      
      private$eval_metrics_linear()
      self$plots <- plot_linear(self$preds)
@@ -50,8 +54,11 @@ evaluator <- R6::R6Class("eval",
      ### input is a probability vector
      self$preds <- tibble(prob = private$pred) %>%
        mutate(pred = ifelse(prob > .5, 1, 0)) %>%
-       mutate(target = private$target,
-              model_id = private$model_id)
+        mutate(
+           target = private$target,
+           id = private$id,
+           model_id = private$model_id
+        )
      
      private$eval_metrics_binary()
      private$eval_metrics_prob()
@@ -61,8 +68,11 @@ evaluator <- R6::R6Class("eval",
      
      if(length(private$pred) == length(private$target)) {
        self$preds <- tibble(pred = private$pred) %>%
-         mutate(target = private$target,
-                model_id = private$model_id)
+         mutate(
+            target = private$target,
+            id = private$id,
+            model_id = private$model_id
+         )
      } else {
        
        probs <- private$pred %>% 
@@ -72,8 +82,11 @@ evaluator <- R6::R6Class("eval",
        
        self$preds <- tibble(prob = probs) %>% 
          mutate(pred = probs %>% map_dbl(which.max)) %>%
-         mutate(target = private$target,
-                model_id = private$model_id)
+          mutate(
+             target = private$target,
+             id = private$id,
+             model_id = private$model_id
+          )
      }
      
      private$eval_metrics_categorical()
@@ -89,10 +102,11 @@ evaluator <- R6::R6Class("eval",
    initialize = function(objective = "binary") {
      private$objective <- objective
    },
-   eval = function(target, pred, model_id = NULL){
+   eval = function(target, pred, id = NULL, model_id = NULL){
      private$target <- target
      private$pred <- pred 
      private$model_id <- model_id 
+     private$id <- id 
      
      private$metrics <- list_metrics[[private$objective]] # linear, binary, categorical
      

@@ -20,6 +20,7 @@ This package provides a simple interface for several third party machine learnin
 
 ```{r}
 pacman::p_load(tidyverse, purrrr, tidyr)
+devtools::document()
 ```
 
 

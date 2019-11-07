@@ -101,7 +101,7 @@ plot_roc_multi <- function(actual, pred, prob){
 plot_confusion <- function(actual, pred){
   
   acc <- Metrics::accuracy(actual, pred) %>% round(3)
-  lvls <- unique(c(actual, pred))
+  lvls <- unique(c(actual, pred)) %>% sort
   dplyr::tibble(actual, pred) %>% 
     dplyr::mutate(actual = factor(actual, levels = lvls), pred = factor(pred, levels = lvls)) %>%
     dplyr::group_by(actual, pred, .drop = F) %>% 
@@ -129,7 +129,7 @@ plot_confusion <- function(actual, pred){
 #' @export
 plot_sankey <- function(actual, pred){
   
-  lvls <- unique(c(actual, pred))
+  lvls <- unique(c(actual, pred)) %>% sort
 
   flow_dat <- tibble(actual, pred) %>% 
     dplyr::mutate(actual = factor(actual, levels = lvls), pred = factor(pred, levels = lvls)) %>%
@@ -242,7 +242,7 @@ plot_binary <- function(preds){
   plot_confusion_pos <- purrr::possibly(plot_confusion, NULL)
   plot_sankey_pos <- purrr::possibly(plot_sankey, NULL)
   plot_probability_pos <- purrr::possibly(plot_probability, NULL)
-  plot_survival_pos <- purrr::possibly(plot_survival, NULL)
+  #plot_survival_pos <- purrr::possibly(plot_survival, NULL)
   plot_importance_pos <- purrr::possibly(plot_importance, NULL)
   
   plots <- list()
@@ -251,7 +251,7 @@ plot_binary <- function(preds){
   
   plots$sankey <- plot_sankey_pos(target, pred)
   plots$prob <- plot_probability_pos(target, prob)
-  plots$surv <- plot_survival_pos(target, pred, prob)
+  #plots$surv <- plot_survival_pos(target, pred, prob)
 
   #plots$importance <- plot_importance_pos(self$model, colnames(private$x_test))
   
@@ -265,8 +265,8 @@ plot_categorical = function(preds){
     confusion = plot_confusion, 
     multi_roc = plot_roc_multi,
     sankey = plot_sankey,
-    multi_prob = plot_probability_multi, 
-    multi_surv = plot_survival_multi
+    multi_prob = plot_probability_multi
+    #multi_surv = plot_survival_multi
   ) %>% 
     imap(~{
       f <- .x

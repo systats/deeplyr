@@ -15,36 +15,33 @@ cat(
 )
 ```
 
-This is a light-weight model engine mainly for text classification tasks written as R6class. While Keras, XGBoost or Ranger (RF) provide high quality learners, `deeplyr` comes with unifying train/test/report functions for all backends mentioned. This streamlined data/ model worklfow does automatically 
 
-<!-- * log (thanks to [`trackR`](https://github.com/daroczig/logger)),  -->
-<!-- * benchmark (thanks to [`tictoc`]() and [`Metrics`]()) -->
-<!-- * optimize over hyperparameter spaces.  -->
+This package provides a simple interface for several third party machine learning libraries. Beside relational data and boosted trees a special focus is given to Natural Language Processing by gathering certain types of modern neural network architectures. 
 
-
-<!-- # Other stuff -->
-
-<!-- * a roadmap for improved NLP decisions focussing on different outcomes (fortcomming). -->
-<!-- * shinyapp for monitoring model performances. -->
-
-
-# Options
-
-```{r, eval = F}
-# keras::install_keras()
-# tensorflow::install_tensorflow()
-# py_config()
-# use_python("/anaconda3/lib/python3.7")
-# py_install("tensorflow")
-# Sys.getenv("RETICULATE_PYTHON")
+```{r}
+pacman::p_load(tidyverse, purrrr, tidyr)
 ```
 
 
-```{bash, eval = F}
-echo "Sys.setenv(RETICULATE_PYTHON = '~/usr/local/bin/python3')" > ~/.Rprofile
+Thanks to rapid open source development of popular machine learning libraries we able to fall back to on a wide variety of frameworks and model architectures. Of course your data project most likely requires some modifications to any given model, but browsing the main code blcoks allows to compose a suitable architecture. A short list can be seen here: 
+
+```{r}
+deeplyr::list_keras_models()
 ```
 
-```{bash, eval = F}
-nano ~/.Rprofile
+How to view a specific model arch?
+
+```{r}
+deeplyr::list_keras_models("bi_lstm")$model
+```
+
+
+
+<!-- This is a light-weight model engine mainly for text classification tasks written as R6class. While Keras, XGBoost or Ranger (RF) provide high quality learners, `deeplyr` comes with unifying train/test/report functions for all backends mentioned. This streamlined data/ model worklfow does automatically  -->
+
+
+```{r}
+# devtools::document()
+# devtools::install()
 ```
 

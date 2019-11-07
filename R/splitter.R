@@ -6,6 +6,7 @@ splitter <- R6::R6Class("split",
     x = NULL,
     y = NULL,
     id = NULL,
+    meta = NULL,
     # functions
     create_split = function(n_splits, p){
       
@@ -27,51 +28,16 @@ splitter <- R6::R6Class("split",
     },
     split_data = function(n_splits, balance = NULL, outcome_mat = F){
       self$splits <- 1:n_splits %>% 
-        purrr::set_names(c("train", "test", "val")[1:n_splits]) %>%
+        purrr::set_names(c("train", "test", "val", "bet")[1:n_splits]) %>%
         purrr::imap(~{
           
-          x <- private$x[self$split_id == .x, ] %>% as.matrix
+          x <- private$x[self$split_id == .x, ]# %>% as.matrix
           target <- private$y[self$split_id == .x]
           id <- private$id[self$split_id == .x]
+          meta <- private$meta[self$split_id == .x, ]
           
-          if(!is.null(balance)) {
-            if(balance == .x){
-          
-              x <- private$x[self$split_id == .x, ]# %>% as.matrix
-              target <- private$y[self$split_id == .x]
-                  
-              x_sub <- private$sub_sample(x, target)
-              target <- x_sub$target
-              x <- x_sub$x %>% dplyr::select(-target) %>% as.matrix
-            }
-          }
-          
-          if(outcome_mat){
-            print("dummies")
-            y <- dummies::dummy(target) %>% as.matrix
-          } else {
-            print("no dummies")
-            y <- target
-          }
-          
-          return(list(x = x, y = y, target = target, id = id))
+          return(list(x = x, y = target, target = target, id = id, meta = meta))
         })
-    },
-    sub_sample = function(x, y){
-      y_min <- dplyr::tibble(y = y) %>% 
-        dplyr::count(y, sort = T) %>% 
-        dplyr::slice(2) %>% 
-        dplyr::pull(n)
-      
-      x_sub <- x %>% 
-        as_tibble() %>%
-        dplyr::mutate(y = y) %>%
-        dplyr::group_by(y) %>% 
-        dplyr::sample_n(y_min) %>% 
-        dplyr::ungroup() %>% 
-        sample_n(n())
-      
-      return(x_sub)
     },
     callback = function(){
       p <- self$p %>% paste(collapse = '_')
@@ -93,16 +59,18 @@ splitter <- R6::R6Class("split",
     initialize = function() {
       
     },
-    set = function(x, y, id = NULL){
+    set = function(x, y, id = NULL, meta = NULL){
       
       private$x <- x
       private$y <- y
       private$id <- id
+      private$meta <- meta
       
     },
-    split = function(val = F, oos = F, p = NULL, seed = NULL, balance = NULL, outcome_mat = F){
+    split = function(val = F, bet = F, oos = F, p = NULL, seed = NULL, balance = NULL, outcome_mat = F){
       
       self$param$val <- val
+      self$param$bet <- bet
       self$param$oos <- oos
       
       if(is.null(seed)) seed <- 42
@@ -116,6 +84,11 @@ splitter <- R6::R6Class("split",
         n_splits <- 2
         if(is.null(p)) p <- c(.8, .2)
       }
+      
+      if(bet){
+        n_splits <- n_splits + 1
+      }
+      
       self$param$prior_p <- p
       
       if(length(private$id) == length(unique(private$id))){
@@ -132,3 +105,12 @@ splitter <- R6::R6Class("split",
     }
   )
 )
+
+#' generate_split
+#' @export
+generate_split <- function(x, y, id, meta){
+  sp <- deeplyr::splitter$new()
+  sp$set(x, y, id, meta)
+  sp$split(val = T, bet = T)
+  return(sp$splits)
+}

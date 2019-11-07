@@ -7,7 +7,7 @@
 keras_cnn_lstm(input_dim, embed_dim = 128, seq_len = 50,
   filter_size = 5, n_filters = 100, pool_size = 4, lstm_dim = 64,
   lstm_drop = 0.2, bidirectional = F, dropout = 0.2,
-  output_dim = 2, output_fun = "softmax")
+  output_dim = 1, output_fun = "sigmoid")
 }
 \arguments{
 \item{input_dim}{Number of unique vocabluary/tokens}

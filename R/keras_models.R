@@ -22,7 +22,7 @@ keras_simple_mlp <- function(
   input_dim, embed_dim, seq_len, embed_vectors = NULL,
   pooling = 'flatten', 
   dense_dim = 128, dense_fun = 'relu', dropout = .5, 
-  output_fun = 'softmax', output_dim
+  output_fun = 'softmax', output_dim = 1
 ){
   
   model <- keras::keras_model_sequential()
@@ -82,17 +82,14 @@ keras_simple_mlp <- function(
 keras_deep_mlp <- function(
   input_dim, embed_dim = 64, seq_len, 
   hidden_dims = c(256, 128, 64), hidden_fun = "relu",
-  output_fun = 'softmax', output_dim
+  output_fun = 'softmax',  output_dim = 1
 ){
   
   model <- keras::keras_model_sequential() %>% 
     keras::layer_embedding(input_dim = input_dim, output_dim = embed_dim, input_length = seq_len) %>%
     keras::layer_flatten()
   
-  # Dnymaically scale the network by increasing hidden_layer and hidden_dims 
-  for(layer in 1:length(hidden_dims)){
-    model %<>% keras::layer_dense(units = hidden_dims[layer], activation = hidden_fun)
-  }
+  1:length(hidden_dims) %>% walk(~ model %<>% keras::layer_dense(units = hidden_dims[.x], activation = hidden_fun))
   
   model %<>% keras::layer_dense(units = output_dim, activation = output_fun)
   
@@ -100,7 +97,41 @@ keras_deep_mlp <- function(
 }
 
 
-#' keras simple lstm
+#' keras lstm
+#'
+#' Word embedding + long short-term memory
+#'
+#' @param input_dim Number of unique vocabluary/tokens
+#' @param embed_dim Number of word vectors
+#' @param seq_len Length of the input sequences
+#' @param lstm_dim Number of recurrent neurons (default 64)
+#' @param lstm_drop Recurrent dropout ratio 
+#' @param output_dim Number of neurons of the output layer
+#' @param output_fun Output activation function
+#' @return keras model
+#' 
+#' @export
+
+keras_lstm <- function(
+  input_dim, embed_dim = 128, seq_len = 50, 
+  lstm_dim = 64, lstm_drop = .2, dropout = .2,
+  output_dim = 1, output_fun = "softmax"
+){
+  
+  model <- keras::keras_model_sequential() %>%
+    keras::layer_embedding(
+      input_dim = input_dim, 
+      output_dim = embed_dim, 
+      input_length = seq_len
+    ) %>% 
+    keras::layer_lstm(units = lstm_dim, dropout = dropout, recurrent_dropout = lstm_drop) %>%
+    keras::layer_dense(units = output_dim, activation = output_fun)
+  
+  return(model)
+}
+
+
+#' keras_bi_lstm
 #'
 #' Word embedding + (bidirectional) long short-term memory
 #'
@@ -109,17 +140,16 @@ keras_deep_mlp <- function(
 #' @param seq_len Length of the input sequences
 #' @param lstm_dim Number of recurrent neurons (default 64)
 #' @param lstm_drop Recurrent dropout ratio 
-#' @param bidirectional default is F
 #' @param output_dim Number of neurons of the output layer
 #' @param output_fun Output activation function
 #' @return keras model
 #' 
 #' @export
 
-keras_simple_lstm <- function(
+keras_bi_lstm <- function(
   input_dim, embed_dim = 128, seq_len = 50, 
-  lstm_dim = 64, lstm_drop = .2, dropout = .2, bidirectional = F,
-  output_dim = 2, output_fun = "softmax"
+  lstm_dim = 64, lstm_drop = .2, dropout = .2, 
+  output_dim = 1, output_fun = "softmax"
 ){
   
   model <- keras::keras_model_sequential() %>%
@@ -127,20 +157,14 @@ keras_simple_lstm <- function(
       input_dim = input_dim, 
       output_dim = embed_dim, 
       input_length = seq_len
-    )
-  
-  if(bidirectional){
-    model %<>% keras::bidirectional(layer_lstm(units = lstm_dim, dropout = .2, recurrent_dropout = lstm_drop)) #return_sequences = T??
-  } else {
-    model %<>% keras::layer_lstm(units = lstm_dim, dropout = dropout, recurrent_dropout = lstm_drop)
-  }
-  
-  model %<>% keras::layer_dense(units = output_dim, activation = output_fun)
-  
+    ) %>% 
+    keras::bidirectional(keras::layer_lstm(units = lstm_dim, dropout = dropout, recurrent_dropout = lstm_drop)) %>%
+    keras::layer_dense(units = output_dim, activation = output_fun)
+
   return(model)
 }
 
-#' keras deep lstm
+#' keras_deep_lstm
 #'
 #' Word embedding + Deep (bidirectional) long short-term memory
 #' 
@@ -150,7 +174,6 @@ keras_simple_lstm <- function(
 #' @param embed_dim Number of word vectors
 #' @param seq_len Length of the input sequences
 #' @param hidden_dims Number of neurons per layer as vector of integers c(256, 128, 64)
-#' @param bidirectional default is F
 #' @param output_dim Number of neurons of the output layer
 #' @param output_fun Output activation function
 #' @return keras model
@@ -159,8 +182,8 @@ keras_simple_lstm <- function(
 
 keras_deep_lstm <- function(
   input_dim, embed_dim = 128, seq_len = 50, 
-  hidden_dims = c(128, 64, 32), bidirectional = F,
-  output_fun = "softmax", output_dim = 2
+  hidden_dims = c(128, 64, 32),
+  output_fun = "softmax", output_dim = 1
 ){
   
   model <- keras::keras_model_sequential() %>%
@@ -171,27 +194,17 @@ keras_deep_lstm <- function(
     )
   
   # Dnymaically scale the network by increasing hidden_layer and hidden_dims 
-  for(layer in 1:length(hidden_dims)){
-    if(bidirectional){
-      model %<>% 
-        keras::bidirectional(
-          layer_lstm(
-            units =  hidden_dims[layer], 
-            dropout = .2, 
-            recurrent_dropout = .2, 
-            return_sequences = T#ifelse(layer == length(hidden_dims), F, T)
-          )
-        )
-    } else {
+  # for(layer in 1:length(hidden_dims))
+  1:length(hidden_dims) %>% 
+    walk(~{
       model %<>% 
         keras::layer_lstm(
-          units =  hidden_dims[layer], 
+          units =  hidden_dims[.x], 
           dropout = .2, 
           recurrent_dropout = .2, 
-          return_sequences = T#ifelse(layer == length(hidden_dims), F, T)
+          return_sequences = T
         )
-    }
-  }
+    })
   
   model %<>% 
     keras::layer_flatten() %>% 
@@ -200,30 +213,28 @@ keras_deep_lstm <- function(
   return(model)
 }
 
-#' keras deep lstm 2
+
+
+#' keras_deep_bi_lstm
 #'
-#' Word embedding + (bidirectional) long short-term memory + Deep dense layer
+#' Word embedding + Deep (bidirectional) long short-term memory
 #' 
-#' Taken from https://www.kaggle.com/gidutz/text2score-keras-rnn-word-embedding
+#' Stacking lstm modules of different size.
 #'
 #' @param input_dim Number of unique vocabluary/tokens
 #' @param embed_dim Number of word vectors
 #' @param seq_len Length of the input sequences
-#' @param lstm_dim Number of lstm neurons (default 32)
-#' @param lstm_drop default is 2
-#' @param bidirectional default is F
-#' @param hidden_dims Number of neurons per layer as vector of integers
+#' @param hidden_dims Number of neurons per layer as vector of integers c(256, 128, 64)
 #' @param output_dim Number of neurons of the output layer
 #' @param output_fun Output activation function
 #' @return keras model
 #' 
 #' @export
 
-keras_deep_lstm2 <- function(
+keras_deep_bi_lstm <- function(
   input_dim, embed_dim = 128, seq_len = 50, 
-  lstm_dim = 32, lstm_drop = .2, bidirectional = F,
-  hidden_dims = c(32, 32, 32),
-  output_dim = 2, output_fun = "softmax"
+  hidden_dims = c(128, 64, 32),
+  output_fun = "softmax", output_dim = 1
 ){
   
   model <- keras::keras_model_sequential() %>%
@@ -233,35 +244,24 @@ keras_deep_lstm2 <- function(
       input_length = seq_len
     )
   
-  if(bidirectional){
-    model %<>% keras::bidirectional(
-      keras::layer_lstm(
-        units = lstm_dim, recurrent_dropout = lstm_drop, dropout = 0.2, 
-        kernel_regularizer = keras::regularizer_l2(2e-5),
-        activity_regularizer = keras::regularizer_l1(2e-5)
-      )
-    ) 
-  } else {
-    model %<>% keras::layer_lstm(
-      units = lstm_dim, recurrent_dropout = lstm_drop, dropout = 0.2, 
-      kernel_regularizer = keras::regularizer_l2(2e-5),
-      activity_regularizer = keras::regularizer_l1(2e-5)
-    )
-  }
+  # Dnymaically scale the network by increasing hidden_layer and hidden_dims 
+  # for(layer in 1:length(hidden_dims))
+  1:length(hidden_dims) %>% 
+    purrr::walk(~{
+      model %<>% 
+        keras::bidirectional(
+          layer_lstm(
+            units =  hidden_dims[.x], 
+            dropout = .2, 
+            recurrent_dropout = .2, 
+            return_sequences = T
+          )
+        )
+    })
   
-  for(layer in 1:length(hidden_dims)){
-    model %<>% keras::layer_dense(
-      units = hidden_dims[layer], 
-      kernel_regularizer = keras::regularizer_l2(2e-5),
-      activity_regularizer = keras::regularizer_l1(2e-5), 
-      activation = "relu"
-    ) %>%
-      keras::layer_dropout(.2) %>%
-      keras::layer_batch_normalization()
-  }
-  
-  ### Output
-  model %<>% keras::layer_dense(units = output_dim, activation = output_fun)
+  model %<>% 
+    keras::layer_flatten() %>% 
+    keras::layer_dense(units = output_dim, activation = output_fun)
   
   return(model)
 }
@@ -290,7 +290,7 @@ keras_cnn_gru <- function(
   input_dim, embed_dim = 128, seq_len = 50, 
   filter_size = 5, n_filters = 100, pool_size = 4, 
   gru_dim = 64, gru_drop = .2, bidirectional = F,
-  output_dim = 2, output_fun = "softmax"
+  output_dim = 1, output_fun = "sigmoid"
 ){
   
   filter_size <- embed_dim/2
@@ -348,7 +348,7 @@ keras_cnn_lstm <- function(
   input_dim, embed_dim = 128, seq_len = 50, 
   filter_size = 5, n_filters = 100, pool_size = 4, 
   lstm_dim = 64, lstm_drop = .2, bidirectional = F, dropout = .2, 
-  output_dim = 2, output_fun = "softmax"
+  output_dim = 1, output_fun = "sigmoid"
 ){
   
   model <- keras::keras_model_sequential() %>%
@@ -403,7 +403,7 @@ keras_gru_cnn <- function(
   input_dim, embed_dim = 128, seq_len = 50, 
   gru_dim = 64, gru_drop = .2, #bidirectional = T,
   filter_sizes = c(3, 2), n_filters = c(120, 60), pool_size = 4, 
-  output_fun = "softmax", output_dim = 1
+  output_fun = "sigmoid", output_dim = 1
 ){
   
   input <- keras::layer_input(shape = seq_len, dtype = "int32", name = "input")
@@ -437,7 +437,7 @@ keras_gru_cnn <- function(
   return(model)
 }
 
-#' keras pooled gru
+#' keras_gru
 #'
 #' Word embedding + spatial dropout + (pooled) gated recurrent unit
 #' 
@@ -448,17 +448,16 @@ keras_gru_cnn <- function(
 #' @param seq_len Length of the input sequences
 #' @param gru_dim Number of recurrent neurons (default 64)
 #' @param gru_drop Recurrent dropout ratio 
-#' @param bidirectional default is F
 #' @param output_dim Number of neurons of the output layer
 #' @param output_fun Output activation function
 #' @return keras model
 #' 
 #' @export
 
-keras_pooled_gru <- function(
+keras_gru <- function(
   input_dim, embed_dim = 128, seq_len = 50, 
-  gru_dim = 64, gru_drop = .2, bidirectional = F,
-  output_fun = "softmax", output_dim = 2
+  gru_dim = 64, gru_drop = .2, 
+  output_fun = "sigmoid", output_dim = 1
 ){
   
   input <- keras::layer_input(shape = seq_len)
@@ -469,14 +468,58 @@ keras_pooled_gru <- function(
       output_dim = embed_dim 
       #input_length = maxlen
     ) %>% 
-    keras::layer_spatial_dropout_1d(0.2)
+    keras::layer_spatial_dropout_1d(0.2) %>% 
+    keras::layer_gru(units = gru_dim, return_sequences = T)
   
-  if(bidirectional){
-    block %<>% keras::bidirectional(keras::layer_gru(units = gru_dim, return_sequences = T))
-  } else {
-    block %<>% keras::layer_gru(units = gru_dim, return_sequences = T)
-  }
+  ### global average
+  avg_pool <- block %>% keras::layer_global_average_pooling_1d()
+  ### global max
+  max_pool <- block %>% keras::layer_global_max_pooling_1d()
   
+  output <- keras::layer_concatenate(c(avg_pool, max_pool)) %>% 
+    keras::layer_dense(output_dim, activation = output_fun)
+  
+  model <- keras::keras_model(input, output)
+  
+  return(model)
+}
+
+
+
+#' keras_bi_gru
+#'
+#' Word embedding + spatial dropout + (pooled) gated recurrent unit
+#' 
+#' Taken from https://www.kaggle.com/yekenot/pooled-gru-fasttext
+#'
+#' @param input_dim Number of unique vocabluary/tokens
+#' @param embed_dim Number of word vectors
+#' @param seq_len Length of the input sequences
+#' @param gru_dim Number of recurrent neurons (default 64)
+#' @param gru_drop Recurrent dropout ratio 
+#' @param output_dim Number of neurons of the output layer
+#' @param output_fun Output activation function
+#' @return keras model
+#' 
+#' @export
+
+keras_bi_gru <- function(
+  input_dim, embed_dim = 128, seq_len = 50, 
+  gru_dim = 64, gru_drop = .2, bidirectional = F,
+  output_fun = "sigmoid", output_dim = 1
+){
+  
+  input <- keras::layer_input(shape = seq_len)
+  
+  block <- input %>%
+    keras::layer_embedding(
+      input_dim = input_dim, 
+      output_dim = embed_dim 
+      #input_length = maxlen
+    ) %>% 
+    keras::layer_spatial_dropout_1d(0.2) %>% 
+    keras::bidirectional(keras::layer_gru(units = gru_dim, return_sequences = T))
+
   ### global average
   avg_pool <- block %>% keras::layer_global_average_pooling_1d()
   ### global max
@@ -507,7 +550,7 @@ keras_pooled_gru <- function(
 keras_multi_cnn <- function(
   input_dim, embed_dim = 128, seq_len = 50, 
   filter_sizes = c(1, 2, 3, 4), n_filters = 50,
-  output_dim = 2, output_fun = "softmax"
+  output_dim = 1, output_fun = "sigmoid"
 ){
   
   inputs <- keras::layer_input(shape = seq_len)

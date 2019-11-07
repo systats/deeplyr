@@ -6,8 +6,8 @@
 \usage{
 keras_cnn_gru(input_dim, embed_dim = 128, seq_len = 50,
   filter_size = 5, n_filters = 100, pool_size = 4, gru_dim = 64,
-  gru_drop = 0.2, bidirectional = F, output_dim = 2,
-  output_fun = "softmax")
+  gru_drop = 0.2, bidirectional = F, output_dim = 1,
+  output_fun = "sigmoid")
 }
 \arguments{
 \item{input_dim}{Number of unique vocabluary/tokens}

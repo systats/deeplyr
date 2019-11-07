@@ -25,6 +25,7 @@ trainer_keras <- R6::R6Class("trainer_keras",
        pull(n) %>%
        as.list %>%
        set_names(c("0", "1"))
+     
    },
    class_weights = function(){
      
@@ -90,7 +91,7 @@ trainer_keras <- R6::R6Class("trainer_keras",
    },
    set_weights = function(){
      if(!is.null(self$param$class_weights)){
-       if(length(colnames(self$splits$train$y)) == 0){
+       if(length(colnames(self$data$train$y)) == 0){
          private$class_weight()
        } else {
          private$class_weights()
@@ -128,10 +129,12 @@ trainer_keras <- R6::R6Class("trainer_keras",
      }
      
      if (objective == "categorical") {
+        
        self$param$output_fun <- "softmax"
        self$param$loss <- "categorical_crossentropy"
        self$param$metrics <- "accuracy"
        self$param$optimizer <- "adam"
+       
      }
    },
    set = function(param, data){
@@ -141,6 +144,8 @@ trainer_keras <- R6::R6Class("trainer_keras",
      
    },
    fit = function(){
+      
+     keras::use_session_with_seed(42)
      
      ### defaults if missing
      private$set_defaults()
@@ -148,39 +153,49 @@ trainer_keras <- R6::R6Class("trainer_keras",
      # define classweights by default
      private$set_weights()
      
+     self$param$output_dim <- ncol(self$data$train$y)
+     
+     if(is.null(self$param$model)){
+        
+        simple_model = function(output_dim = 1, output_fun = "sigmoid"){
+           keras::keras_model_sequential() %>%
+              #keras::layer_dense(units = 10, activation = "relu", input_shape = ncol(self$data$train$x)) %>%
+              keras::layer_dense(units = output_dim, activation = output_fun) # input_shape = ncol(self$data$train$x))
+        }
+        
+        self$param$model <- simple_model
+     }
+     
      ### compile keras model
      private$compile()
      
      # val data?
      if(!is.null(self$data$val$x)){
-       val_data <- list(self$data$val$x, self$data$val$y)
+       val_data <- list(as.matrix(self$data$val$x), self$data$val$y)
        self$param$validation_split <- NULL
      } else {
        self$param$validation_split <- .2
        val_data = NULL
      }
      
-     
      keras_param <- list(
-       self$model, 
-       self$data$train$x, 
-       self$data$train$y, 
+       object = self$model, 
+       x = as.matrix(self$data$train$x), 
+       y = self$data$train$y, 
        batch_size = self$param$batch_size,
-       #shuffle = T,
        class_weight = self$param$class_weights,
        epochs = self$param$epochs, # old: x$epochs %error%  in combination with early stoping: free lunch!
        callbacks = self$param$callbacks, 
        validation_split = self$param$validation_split,
        validation_data = val_data, 
        verbose = self$param$verbose
-     ) 
+     )
      
      do.call(keras::fit, compact(keras_param))
    },
    predict = function(x_test = NULL){
      
-     if(is.null(x_test)) x_test <- self$data$test$x
-     if(is.null(x_test)) return(message("No new data found"))
+     if(is.null(x_test)) x_test <- as.matrix(self$data$test$x)
      
      pred <- predict(self$model, x_test)
      
@@ -191,23 +206,13 @@ trainer_keras <- R6::R6Class("trainer_keras",
   )
 )
 
-#' @export
-predict_mixture_keras <- function(model, x_test, output_dim, mix_dim){
-  
-  mdn <- reticulate::import("mdn")
-  np <- reticulate::import("numpy")
-  
-  y_pred <- predict(model, x_test)
-  y_samples = np$apply_along_axis(mdn$sample_from_output, 1L, y_pred, as.integer(output_dim), as.integer(mix_dim), temp=1.0)
-  
-  return(as.vector(y_samples))
-}
-
-
-# class_weights <- self$splits$train$y %>%
-#   tibble(var = .) %>%
-#   count(var) %>%
-#   mutate(n = max(n)/n) %>%
-#   pull(n) %>%
-#   as.list %>%
-#   set_names(c("0", "1"))
+#' predict_mixture_keras <- function(model, x_test, output_dim, mix_dim){
+#'   
+#'   mdn <- reticulate::import("mdn")
+#'   np <- reticulate::import("numpy")
+#'   
+#'   y_pred <- predict(model, x_test)
+#'   y_samples = np$apply_along_axis(mdn$sample_from_output, 1L, y_pred, as.integer(output_dim), as.integer(mix_dim), temp=1.0)
+#'   
+#'   return(as.vector(y_samples))
+#' }

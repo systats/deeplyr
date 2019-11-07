@@ -5,10 +5,9 @@ evaluator <- R6::R6Class("eval",
    # variables
    metrics = NULL,
    objective = NULL, 
-   model_id = NA, 
    target = NULL,
    pred = NULL,
-   id = NULL,
+   meta = NULL,
    # functions
    eval_metrics = function(metrics){
      metrics %>%
@@ -39,26 +38,25 @@ evaluator <- R6::R6Class("eval",
    # Models
    eval_linear = function() {
      
-     self$preds <- tibble(pred = private$pred) %>%
+     if(is.null(private$meta)) private$meta <- tibble(id = 1:length(private$pred))
+     self$preds <- tibble(pred = round(private$pred, 4)) %>%
         mutate(
-           target = private$target,
-           id = private$id,
-           model_id = private$model_id
-        )
+           target = private$target
+        ) %>% 
+        bind_cols(private$meta)
      
      private$eval_metrics_linear()
      self$plots <- plot_linear(self$preds)
    },
    eval_binary = function() {
      
-     ### input is a probability vector
-     self$preds <- tibble(prob = private$pred) %>%
+      if(is.null(private$meta)) private$meta <- tibble(id = 1:length(private$pred))
+     self$preds <- tibble(prob = round(private$pred, 4)) %>%
        mutate(pred = ifelse(prob > .5, 1, 0)) %>%
         mutate(
-           target = private$target,
-           id = private$id,
-           model_id = private$model_id
-        )
+           target = private$target
+        ) %>% 
+        bind_cols(private$meta)
      
      private$eval_metrics_binary()
      private$eval_metrics_prob()
@@ -67,15 +65,20 @@ evaluator <- R6::R6Class("eval",
    eval_categorical = function() {
      
      if(length(private$pred) == length(private$target)) {
+        
+       if(is.null(private$meta)) private$meta <- tibble(id = 1:length(private$pred))
        self$preds <- tibble(pred = private$pred) %>%
-         mutate(
-            target = private$target,
-            id = private$id,
-            model_id = private$model_id
-         )
+          mutate(
+             target = private$target
+          ) %>% 
+          bind_cols(private$meta)
+       
      } else {
+        
+       if(is.null(private$meta)) private$meta <- tibble(id = 1:nrow(private$pred))
        
        probs <- private$pred %>% 
+         round(4) %>%
          as_tibble() %>% 
          set_names(str_replace_all(colnames(.), "V", "prob_")) %>% 
          split(1:nrow(.))
@@ -83,10 +86,9 @@ evaluator <- R6::R6Class("eval",
        self$preds <- tibble(prob = probs) %>% 
          mutate(pred = probs %>% map_dbl(which.max)) %>%
           mutate(
-             target = private$target,
-             id = private$id,
-             model_id = private$model_id
-          )
+             target = private$target
+          ) %>% 
+          bind_cols(private$meta)
      }
      
      private$eval_metrics_categorical()
@@ -102,11 +104,10 @@ evaluator <- R6::R6Class("eval",
    initialize = function(objective = "binary") {
      private$objective <- objective
    },
-   eval = function(target, pred, id = NULL, model_id = NULL){
+   eval = function(target, pred, meta = NULL){
      private$target <- target
      private$pred <- pred 
-     private$model_id <- model_id 
-     private$id <- id 
+     private$meta <- meta 
      
      private$metrics <- list_metrics[[private$objective]] # linear, binary, categorical
      

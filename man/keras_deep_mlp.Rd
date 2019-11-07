@@ -5,7 +5,8 @@
 \title{keras deep mlp}
 \usage{
 keras_deep_mlp(input_dim, embed_dim = 64, seq_len, hidden_dims = c(256,
-  128, 64), hidden_fun = "relu", output_fun = "softmax", output_dim)
+  128, 64), hidden_fun = "relu", output_fun = "softmax",
+  output_dim = 1)
 }
 \arguments{
 \item{input_dim}{Number of unique vocabluary/tokens}

@@ -11,16 +11,17 @@ knitr::opts_chunk$set(echo = TRUE)
 # Packages
 
 ```{r}
-pacman::p_load(tidyverse, purrr, furrr)
+pacman::p_load(dplyr, purrr, furrr)
+devtools::load_all()
 ```
 
 
 # Main Function
 
 ```{r}
-split_sample <- function(x, y, id = NULL, val = F, oos = F, balance = NULL){
-  sp <- split_mod$new()
-  sp$set(x, y, id)
+split_sample <- function(x, y, id = NULL, meta = NULL, val = F, oos = F, balance = NULL){
+  sp <- deeplyr::splitter$new()
+  sp$set(x, y, id, meta)
   sp$split(val, oos, balance)
   return(sp)
 }
@@ -61,7 +62,8 @@ split_sample(x = tdf[,-1:-2], y = tdf$y, val = T) %>% glimpse
 # Out of Sample 
 
 ```{r}
-split_sample(x = tdf[,-1:-2], y = tdf$y, id = tdf$id, oos = T,) %>% glimpse
+nn <- split_sample(x = tdf[,-1:-2], y = tdf$y, id = tdf$id, meta = tdf[,c("x1"), drop = F], oos = T,) %>% glimpse
+nn$splits %>% walk(glimpse)
 ```
 
 

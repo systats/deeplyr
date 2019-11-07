@@ -11,18 +11,21 @@ knitr::opts_chunk$set(echo = TRUE)
 # Packages
 
 ```{r}
-pacman::p_load(tidyverse, purrr, furrr)
+pacman::p_load(tidyverse, purrr, furrr, keras, xgboost)
+devtools::document()
 devtools::load_all()
+options(scipen = 999)
+# devtools::install()
 ```
 
 
 # Main Function
 
 ```{r}
-split_sample <- function(x, y, id = NULL, val = F, oos = F, balance = NULL){
+split_sample <- function(x, y, id = NULL, val = F, bet = F, oos = F, balance = NULL){
   sp <- splitter$new()
   sp$set(x, y, id)
-  sp$split(val, oos, balance)
+  sp$split(val, bet, oos, balance)
   return(sp)
 }
 ```
@@ -38,225 +41,188 @@ df <- tibble(
   x1 = rnorm(1000),
   x2 = rnorm(1000),
   z = 2*x1 + 3*x2,
-  y = ifelse(z > mean(z), 1, 0) #2*x1 + 2*x2 + rnorm(1000)
+  y = ifelse(z > mean(z), 1, 0), #2*x1 + 2*x2 + rnorm(1000)
+  y_multi0 = case_when(z > (mean(z)+.2*sd(z)) ~ 0, z < (mean(z)-.2*sd(z)) ~ 2, T ~ 1),
+  y_multi1 = y_multi0 + 1
 ) %>% 
-  select(split_id, y, id, contains("x")) %>%
+  select(split_id, contains("y"), id, contains("x")) %>%
   glimpse
 ```
 
+```{r}
+### Data
+sp <- split_sample(x = df[,c("x1", "x2")], y = df$y, )
+sp$splits %>% iwalk(glimpse)
+```
 
 
 # Trainer
 
+## XGBoost
+
+```{r}
+devtools::document()
+fit1 <- fit_learner(list(), sp$splits, "xgboost:binary")
+fit1$eval$preds
+```
+
+
 ## Keras
 
 ```{r}
-keras_trainer <- R6::R6Class("keras_trainer",
-  private = list(
-    class_weight = function(){
-    
-      self$param$class_weights <- self$data$train$y %>%
-        tibble(var = .) %>%
-        count(var) %>%
-        mutate(n = max(n)/n) %>%
-        pull(n) %>%
-        as.list %>%
-        set_names(c("0", "1"))
-    },
-    class_weights = function(){
-      
-      self$param$class_weights <- self$data$train$y %>%
-        as_tibble() %>%
-        set_names(1:length(.)) %>%
-        imap(~{
-          out <- .x  %>%
-            tibble(var = .) %>%
-            count(var) %>%
-            mutate(n = max(n)/n) %>%
-            filter(var == 1) %>%
-            pull(n)
-          return(out)
-        }) %>%
-        c(list(`0` = 1), .)
-      
-    },
-    get_param = function(model, param){
-    
-      out <- formals(model) %>%
-        imap(~{
-          if(.y %in% names(param)){
-            .x <-  param[[.y]]
-          }
-          return(.x)
-        })
-      return(out)
-    },
-    comp_param = function(param1, param2){
-      not_included <- param2[!(names(param2) %in% names(param1))]
-      out <- param1 %>%
-        imap(~{
-          if(.y %in% names(param2)){
-            .x <-  param2[[.y]]
-          }
-          return(.x)
-        }) %>%
-        c(not_included)
-      return(out)
-    },
-    compile = function(){
-      
-      model_param <- private$get_param(self$param$model, self$param)
-      self$param <- private$comp_param(self$param, model_param)
-      self$param$model <- do.call(self$param$model, model_param) %>%
-        keras::compile(
-          loss = self$param$loss,
-          metric = self$param$metric,
-          optimizer = self$param$optimizer
-        )
-      
-    },
-    set_defaults = function(){
-      
-      if(is.null(self$param$batch_size)) self$param$batch_size <- 30
-      if(is.null(self$param$verbose)) self$param$verbose <- 1
-      if(is.null(self$param$callbacks)) self$param$callbacks <- c(keras::callback_early_stopping(monitor = "val_loss", patience = 1, mode = "auto"))
-      
-    },
-    set_weights = function(){
-      if(!is.null(self$param$class_weights)){
-        if(length(colnames(self$splits$train$y)) == 0){
-          private$class_weight()
-        } else {
-          private$class_weights()
-        }
-      } else {
-        self$param$class_weights <- NULL
-      }
-    }
-  ),
-  public = list(
-    model = NULL,
-    param = NULL,
-    data = NULL,
-    initialize = function(objective) {
-      
-      if (objective == "linear") {
-          self$param$output_fun <- "linear"
-          self$param$loss <- "mse"
-          self$param$metrics <- "mean_squared_error"
-          self$param$optimizer <- "adam" #optimizer_rmsprop(),
-      } 
-      # if (private$objective == "mixture"){
-      #   self$param$output_fun <- "linear"
-      #   #self$param$loss <- 
-      #   self$param$metrics <- "mean_squared_error"
-      #   self$param$optimizer <- "adam" #optimizer_rmsprop(),
-      #   self$predict <- predict_mixture_keras
-      #   
-      # }
-      if (objective == "binary") {
-          self$param$output_fun <- "sigmoid"
-          self$param$loss <- "binary_crossentropy"
-          self$param$metrics <- "accuracy"
-          self$param$optimizer <- "adam"
-      }
-      
-      if (objective == "categorical") {
-          self$param$output_fun <- "softmax"
-          self$param$loss <- "categorical_crossentropy"
-          self$param$metrics <- "accuracy"
-          self$param$optimizer <- "adam"
-      }
-    },
-    set = function(param, data){
-      
-      self$data <- data
-      self$param <- c(self$param, param)
-      self$param$model <- param$model
-      
-    },
-    fit = function(){
-      
-      ### defaults if missing
-      private$set_defaults()
-      
-      # define classweights by default
-      private$set_weights()
-      
-      ### compile keras model
-      private$compile()
-      
-      # val data?
-      if(!is.null(self$data$val$x)){
-        val_data <- list(self$data$val$x, self$data$val$y)
-        self$param$validation_split <- NULL
-      } else {
-        self$param$validation_split <- .2
-        val_data = NULL
-      }
-  
-      
-      keras_param <- list(
-        self$param$model, 
-        self$data$train$x, 
-        self$data$train$y, 
-        batch_size = self$param$batch_size,
-        #shuffle = T,
-        class_weight = self$param$class_weights,
-        epochs = self$param$epochs, # old: x$epochs %error%  in combination with early stoping: free lunch!
-        callbacks = self$param$callbacks, 
-        validation_split = self$param$validation_split,
-        validation_data = val_data, 
-        verbose = self$param$verbose
-      ) 
-      
-      do.call(keras::fit, compact(keras_param))
-    },
-    predict = function(x_test = NULL){
-      
-      if(is.null(x_test)) x_test <- self$data$test$x
-      if(is.null(x_test)) return(message("No new data found"))
-      
-      pred <- predict(self$param$model, x_test)
-      
-      if(ncol(pred) == 1) pred <- pred[,1, drop=T]
-      
-      return(pred)
-    }
-  )
-)
+devtools::document()
+# custom_keras <- function(input_dim = 20, output_dim = 1, output_fun = "sigmoid"){
+#   keras::keras_model_sequential() %>%
+#     keras::layer_dense(units = 10, activation = "relu", input_shape = input_dim) %>%
+#     keras::layer_dense(units = output_dim, activation = output_fun)
+# }
+#pkeras <- list(input_dim = 2, output_dim = 1, output_fun = "sigmoid", model = custom_keras)
+fit1 <- fit_learner(list(), sp$splits, "keras:binary")
+fit1$eval$preds
 ```
 
+
+## RANGER
+
+```{r}
+devtools::document()
+fit1 <- fit_learner(list(min_node_size = 5), sp$splits, "ranger:binary", dev = F)
+fit1$test()
+fit1$eval$preds
+```
+
+
+## CATBOOST
+
+* catboost-darwin-0.17.1
+* catboost-R-Darwin-0.17.1.tgz
+* devtools::install_url('https://github.com/catboost/catboost/releases/download/v0.17.1/catboost-R-Darwin-0.17.1.tgz', args = c("--no-multiarch"))
 
 
 ```{r}
 devtools::document()
-### Input
-custom_keras <- function(input_dim = 20, output_dim = 1, output_fun = "sigmoid"){
-  keras::keras_model_sequential() %>%
-    keras::layer_dense(units = 10, activation = "relu", input_shape = input_dim) %>%
-    keras::layer_dense(units = output_dim, activation = output_fun)
-}
-pkeras <- list(input_dim = 3, output_dim = 1, output_fun = "sigmoid", model = custom_keras)
+fit1 <- fit_learner(NULL, sp$splits, "catboost:binary")
+fit1$eval$preds
+```
 
-### Data
-sp <- split_sample(x = df[,-1:-2], y = df$y) %>% glimpse
 
-### Modelling
-trainer <- keras_trainer$new("binary")
-trainer$set(pkeras, data = sp$splits)
-trainer$fit()
-pred <- trainer$predict()
 
-### Eval
-e <- evaluator$new("binary")
-e$eval(target = sp$splits$test$target, pred)
-e$preds
-e$plots
-#trainer$predict(sp$splits$train$x)
+## RPART
+
+```{r}
+devtools::document()
+#rpart::rpart()
+#rpart::rpart.control()
+fit1 <- fit_learner(NULL, sp$splits, "rpart:binary")
+fit1$eval$preds
+```
+
+
+## randomForest
+
+```{r}
+devtools::document()
+fit1 <- fit_learner(NULL, sp$splits, "rf:binary")
+fit1$eval$preds
 ```
 
 
 
 
 
+# All together
+
+```{r}
+all <- c("keras:binary", "xgboost:binary", "catboost:binary", "ranger:binary", "rpart:binary", "rf:binary") %>% 
+  imap(~{
+    fit1 <- fit_learner(NULL, sp$splits, .x)
+    pack <- .x %>% str_extract("\\w+")
+    fit1$eval$preds  %>% select(id, target, everything()) %>% rename_at(-1:-2, ~paste0(.x, "_", pack))
+  }) %>%
+  reduce(left_join)
+
+all %>% 
+  select(contains("pred")) %>% 
+  imap(~{
+    mean(.x == all$target)
+  })
+
+sp_new <- split_sample(x = all %>% select(contains("prob"), -contains("keras")), y = all$target)
+fit1 <- fit_learner(NULL, sp_new$splits, "xgboost:binary")
+mean(fit1$eval$preds$pred == fit1$eval$preds$target)
+```
+
+
+
+
+# Other
+
+
+## LightGBM
+
+* https://github.com/microsoft/LightGBM/tree/master/R-package
+**Not Working Right Now**
+
+### Either use Docker
+
+```{bash}
+mkdir lightgbm-docker
+cd lightgbm-docker
+wget https://raw.githubusercontent.com/Microsoft/LightGBM/master/docker/dockerfile-r
+docker build -t lightgbm-r -f dockerfile-r .
+```
+
+### Or setup up your system
+
+```{bash}
+brew install cmake
+brew install libomp
+brew install cmake
+brew install gcc
+```
+
+```{bash}
+git clone --recursive https://github.com/microsoft/LightGBM
+cd LightGBM
+Rscript build_r.R
+```
+
+
+### Then Install R Package
+
+```{r}
+# devtools::install_github("Microsoft/LightGBM", subdir = "R-package")
+# devtools::install_github("Laurae2/lgbdl")
+lgbdl::lgb.dl(commit = "master",
+       compiler = "vs",
+       repo = "https://github.com/microsoft/LightGBM")
+```
+
+
+```{r}
+library(lightgbm)
+data(agaricus.train, package='lightgbm')
+dtrain <- lgb.Dataset(as.matrix(mtcars[,1:2]), label=mtcars$vs)
+params <- list(objective="regression", metric="l2")
+model <- lgb.cv(params, dtrain, 10, nfold=5, min_data=1, learning_rate=1, early_stopping_rounds=10)
+```
+
+
+
+
+
+
+## GBM3
+
+```{r}
+# devtools::install_github("gbm-developers/gbm3")
+# library(gbm3)
+# available_distributions()
+# bern_dist <- gbm_dist("Bernoulli")
+# 
+# train_params <- training_params(num_trees = 2000, interaction_depth = 3, 
+#                                 num_train=nrow(data), num_features = 3)
+# fit <- gbmt(Y ~ X1 + X2 + X3, distribution=bern_dist, data=data, weights = w, 
+#             offset=offset, train_params = train_params,
+#             cv_folds=5, keep_gbm_data=TRUE)
+```

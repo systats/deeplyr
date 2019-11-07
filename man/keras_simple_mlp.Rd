@@ -6,7 +6,7 @@
 \usage{
 keras_simple_mlp(input_dim, embed_dim, seq_len, embed_vectors = NULL,
   pooling = "flatten", dense_dim = 128, dense_fun = "relu",
-  dropout = 0.5, output_fun = "softmax", output_dim)
+  dropout = 0.5, output_fun = "softmax", output_dim = 1)
 }
 \arguments{
 \item{input_dim}{Number of unique vocabluary/tokens}

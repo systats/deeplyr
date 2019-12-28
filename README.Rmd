@@ -15,7 +15,7 @@ cat(
 )
 ```
 
-`deeplyr` provides a standrad model interface for some machine learning libraries. Internally the package is managed by R6 classes, allowing for cross-validation or genetic hyper parameter tuning. Every model run can be saved including meta, params, metrics, model, and preds either as .rds or .json.
+`deeplyr` provides a standard model interface for some machine learning libraries. Internally the package is managed by R6 classes, allowing for cross-validation or genetic hyper parameter tuning. Every model run can be saved including meta, params, metrics, model, and preds either as .rds or .json.
 
 Have already full support (fit, predict, save)
 
@@ -46,7 +46,7 @@ Other libraries that are yet not fully supported are
 * `sklearn`
 
 
-Most common preiction tasks are
+Most common prediction tasks are
 
 * **linear**
 * **binary**

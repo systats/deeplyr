@@ -1,0 +1,73 @@
+---
+title: "Trainer"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+# Packages
+
+```{r}
+pacman::p_load(tidyverse, purrr, furrr, keras, xgboost, h2o)
+devtools::document()
+#devtools::load_all()
+options(scipen = 999)
+# devtools::install()
+```
+
+
+
+
+# CV Test Data
+
+```{r}
+N <- 1000
+df <- tibble(
+  split_id = sample(1:5, size = N, prob = rep(.2, 5), replace = T),
+  x1 = rnorm(N),
+  x2 = rnorm(N),
+  z = 2*x1 + 3*x2 + rnorm(N),
+  y = ifelse(z > mean(z), 1, 0), #2*x1 + 2*x2 + rnorm(1000)
+  y_multi0 = case_when(z > (mean(z)+.2*sd(z)) ~ 0, z < (mean(z)-.2*sd(z)) ~ 2, T ~ 1),
+  y_multi1 = y_multi0 + 1
+) %>%
+  glimpse
+
+df %>%
+  count(split_id, y)
+```
+
+
+# Binary
+
+```{r}
+sp_binary <- split_sample(x = df[,c("x1", "x2")], id = df$split_id, y = df$y, meta = df)
+#sp_binary %>% iwalk(glimpse)
+```
+
+
+## CV
+
+```{r}
+devtools::document()
+li01 <- fit_cv(list(epochs = 1), sp_binary, task = "binary", backend = "keras", path = "test")
+li01$preds %>% glimpse
+```
+
+
+
+## keras
+
+```{r, eval=F}
+devtools::document()
+li01 <- fit_learner(list(), sp_linear, task = "linear", backend = "keras")
+li01$preds %>% glimpse
+```
+
+
+
+
+

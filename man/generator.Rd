@@ -4,7 +4,7 @@
 \name{generator}
 \alias{generator}
 \title{generator}
-\format{An object of class \code{R6ClassGenerator} of length 24.}
+\format{An object of class \code{R6ClassGenerator} of length 25.}
 \usage{
 generator
 }

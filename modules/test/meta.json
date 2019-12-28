@@ -1,0 +1,11 @@
+[
+  {
+    "task": "binary",
+    "backend": "keras",
+    "start": "2019-12-27 21:16:27",
+    "n_train": 806,
+    "n_test": 806,
+    "runtime": 0.5,
+    "end": "2019-12-27 21:16:28"
+  }
+]

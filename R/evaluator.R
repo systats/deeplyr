@@ -1,128 +1,114 @@
-#' evaluator
+#' browse_metrics
 #' @export
-evaluator <- R6::R6Class("eval",
- private = list(
-   # variables
-   metrics = NULL,
-   objective = NULL, 
-   target = NULL,
-   pred = NULL,
-   meta = NULL,
-   # functions
-   eval_metrics = function(metrics){
-     metrics %>%
-       imap_dfc( ~ {
-         tibble(value = .x(self$preds$target, self$preds$pred)[1]) %>%
-           set_names(.y)
-       }) %>% 
-       round(3)
-   },
-   eval_metrics_linear = function() {
-     self$perform  <- list_metrics[["linear"]] %>% private$eval_metrics()
-   },
-   eval_metrics_binary = function() {
-     self$perform  <- list_metrics[["binary"]] %>% private$eval_metrics()
-   },
-   eval_metrics_prob = function() {
-     self$perform  <- list_metrics[["prob"]] %>%
-       imap_dfc( ~ {
-         tibble(value = .x(self$preds$target, self$preds$prob)[1]) %>%
-           set_names(.y)
-       }) %>%
-       round(3) %>%
-       bind_cols(self$perform) 
-   },
-   eval_metrics_categorical = function() {
-     self$perform  <- list_metrics[["categorical"]]  %>% private$eval_metrics()
-   },
-   # Models
-   eval_linear = function() {
-     
-     if(is.null(private$meta)) private$meta <- tibble(id = 1:length(private$pred))
-     self$preds <- tibble(pred = round(private$pred, 4)) %>%
-        mutate(
-           target = private$target
-        ) %>% 
-        bind_cols(private$meta)
-     
-     private$eval_metrics_linear()
-     self$plots <- plot_linear(self$preds)
-   },
-   eval_binary = function() {
-     
-      if(is.null(private$meta)) private$meta <- tibble(id = 1:length(private$pred))
-     self$preds <- tibble(prob = round(private$pred, 4)) %>%
-       mutate(pred = ifelse(prob > .5, 1, 0)) %>%
-        mutate(
-           target = private$target
-        ) %>% 
-        bind_cols(private$meta)
-     
-     private$eval_metrics_binary()
-     private$eval_metrics_prob()
-     self$plots <- plot_binary(self$preds)
-   },
-   eval_categorical = function() {
-     
-     if(length(private$pred) == length(private$target)) {
-        
-       if(is.null(private$meta)) private$meta <- tibble(id = 1:length(private$pred))
-       self$preds <- tibble(pred = private$pred) %>%
-          mutate(
-             target = private$target
-          ) %>% 
-          bind_cols(private$meta)
-       
-     } else {
-        
-       if(is.null(private$meta)) private$meta <- tibble(id = 1:nrow(private$pred))
-       
-       probs <- private$pred %>% 
-         round(4) %>%
-         as_tibble() %>% 
-         set_names(str_replace_all(colnames(.), "V", "prob_")) %>% 
-         split(1:nrow(.))
-       
-       self$preds <- tibble(prob = probs) %>% 
-         mutate(pred = probs %>% map_dbl(which.max)) %>%
-          mutate(
-             target = private$target
-          ) %>% 
-          bind_cols(private$meta)
-     }
-     
-     private$eval_metrics_categorical()
-     self$plots <- plot_categorical(self$preds)
+browse_metrics <- function(){
+   browseURL("https://github.com/mfrasco/Metrics")
+}
+
+#' eval_model
+#' @export
+eval_model <- function(self){
+   if(self$task == "linear") {
+      eval_linear(self$preds)
+   } else if(self$task == "binary"){
+      eval_binary(self$preds)
+   } else if(self$task == "multi"){
+      eval_multi(self$preds)
    }
- ),
- public = list(
-   # variables
-   perform = NULL,
-   plots = NULL,
-   preds = NULL, 
-   # functions
-   initialize = function(objective = "binary") {
-     private$objective <- objective
-   },
-   eval = function(target, pred, meta = NULL){
-     private$target <- target
-     private$pred <- pred 
-     private$meta <- meta 
-     
-     private$metrics <- list_metrics[[private$objective]] # linear, binary, categorical
-     
-     ### Metrics and Performance Grafics
-     if (private$objective %in% c("linear", "mixture")) {
-        private$eval_linear()
-     }
-     
-     if (private$objective == "categorical") {
-        private$eval_categorical()
-     }
-     
-     if (private$objective == "binary") {
-        private$eval_binary()
-     }
+}
+
+#' compute_metrics
+#' @export
+compute_metrics <- function(metrics, actual, pred){
+   metrics %>%
+      purrr::map(possibly, otherwise = NULL) %>%
+      purrr::map_dfc(~mean(.x(actual, pred)))
+}
+
+#' eval_linear
+#' @export
+eval_linear <- function(preds){
+   list(
+      mse = Metrics::mse,
+      rmse = Metrics::rmse,
+      mae = Metrics::mae,
+      mape = Metrics::mape
+      # se = Metrics::se,
+      # ae = Metrics::ae,
+      # ape = Metrics::ape,
+      # smape = Metrics::smape
+      # sle = Metrics::sle,
+      # msle = Metrics::msle,
+      # rmsle = Metrics::rmsle,
+      # rse = Metrics::rse,
+      # rrse = Metrics::rrse,
+      # rae = Metrics::rae
+   ) %>%
+   compute_metrics(preds$target, preds$pred)
+}
+
+#' eval_binary
+#' @export
+eval_binary <- function(preds){
+   pred <- list(
+      accuracy = Metrics::accuracy,
+      precision = Metrics::precision,
+      recall = Metrics::recall,
+      fbeta_score = Metrics::fbeta_score,
+      ce = Metrics::ce,
+      f1 = Metrics::f1
+   ) %>%
+   compute_metrics(preds$target, preds$pred)
+   
+   prob <- list(
+      ll = Metrics::ll,
+      logloss = Metrics::logLoss,
+      auc = Metrics::auc
+   ) %>%
+   compute_metrics(preds$target, preds$prob1) 
+   
+   c(pred, prob)
+}
+
+
+#' rank_prob_score
+#' https://opisthokonta.net/?p=1333
+#' @export
+rank_prob_score <- function(target, probs){
+   ncat <- ncol(probs)
+   npred <- nrow(probs)
+   rps <- numeric(npred)
+   
+   for (rr in 1:npred){
+      obsvec <- rep(0, ncat)
+      obsvec[target[rr]] <- 1
+      cumulative <- 0
+      for (i in 1:ncat){
+         cumulative <- cumulative + (sum(probs[rr,1:i]) - sum(obsvec[1:i]))^2
+      }
+      rps[rr] <- (1/(ncat-1))*cumulative
    }
- )
-)
+   return(rps)
+}
+
+#' eval_multi
+#' @export
+eval_multi <- function(preds){
+   pred <- list(
+      accuracy = Metrics::accuracy,
+      precision = Metrics::precision,
+      recall = Metrics::recall,
+      fbeta_score = Metrics::fbeta_score,
+      ce = Metrics::ce,
+      f1 = Metrics::f1
+   ) %>%
+   compute_metrics(preds$target, preds$pred)
+   
+   target <- preds$target
+   if(any(target %in% 0)) target <- target + 1
+   
+   prob <- list(rps = rank_prob_score) %>%
+      purrr::map(possibly, otherwise = NULL) %>%
+      purrr::map_dfc(~mean(.x(target, preds %>% select(contains("prob")) %>% as.matrix), na.rm = T))
+   
+   c(pred, prob)
+}

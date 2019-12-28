@@ -4,7 +4,7 @@
 \alias{fit_learner}
 \title{fit_learner}
 \usage{
-fit_learner(param, splits, backend = "xgboost:binary", dev = F)
+fit_learner(params, data, task, backend, path = NULL, dev = F)
 }
 \description{
 fit_learner

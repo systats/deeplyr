@@ -15,34 +15,42 @@ cat(
 )
 ```
 
+`deeplyr` provides a standrad model interface for some machine learning libraries. Internally the package is managed by R6 classes, allowing for cross-validation or genetic hyper parameter tuning. Every model run can be saved including meta, params, metrics, model, and preds either as .rds or .json.
 
-This package provides a simple interface for several third party machine learning libraries. Beside relational data and boosted trees a special focus is given to Natural Language Processing by gathering certain types of modern neural network architectures. 
+Have already full support (fit, predict, save)
 
-```{r}
-pacman::p_load(tidyverse, purrrr, tidyr)
-devtools::document()
+* `keras`
+* `h2o`
+* `xgboost`
+
+For example
+
+```{r, eval = F}
+f1 <- fit_learner(params, data, task = "binary", backend = "xgboost")
+f1$save(".. your path ...")
 ```
 
 
-Thanks to rapid open source development of popular machine learning libraries we able to fall back to on a wide variety of frameworks and model architectures. Of course your data project most likely requires some modifications to any given model, but browsing the main code blcoks allows to compose a suitable architecture. A short list can be seen here: 
+What about cross validation?
 
-```{r}
-deeplyr::list_keras_models()
-```
-
-How to view a specific model arch?
-
-```{r}
-deeplyr::list_keras_models("bi_lstm")$model
+```{r, eval = F}
+f1 <- fit_cv(params, data, task = "binary", backend = "xgboost")
+f1$save(".. your path ...")
 ```
 
 
+Other libraries that are yet not fully supported are
 
-<!-- This is a light-weight model engine mainly for text classification tasks written as R6class. While Keras, XGBoost or Ranger (RF) provide high quality learners, `deeplyr` comes with unifying train/test/report functions for all backends mentioned. This streamlined data/ model worklfow does automatically  -->
+* `ranger`
+* `randomForest`
+* `sklearn`
 
 
-```{r}
-# devtools::document()
-# devtools::install()
-```
+Most common preiction tasks are
+
+* **linear**
+* **binary**
+* **multi**
+* *poisson*
+
 

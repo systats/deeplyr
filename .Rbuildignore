@@ -2,4 +2,8 @@
 ^\.Rproj\.user$
 ^.*\.Rdata$
 ^_
-modules$
+modules
+docs
+modulestest
+vignette
+CMakeFilesw

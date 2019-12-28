@@ -1,105 +1,246 @@
 #' learner
 #' @export
 learner <- R6::R6Class("learner",
+                       
   #inherit = backends, 
   private = list(
-    backend = NULL,
-    objective = NULL,
-    metrics = NULL,
-    new_path = NULL,
-    set_backend = function(backend){
+    init_backend = function(){
       
-      input <- backend %>%
-        str_split(":") %>% unlist()
-      
-      private$backend <- input[1]
-      private$objective <- input[2]
-      
-      if(private$backend == "keras") self$trainer <- trainer_keras$new(private$objective)
-      if(private$backend == "xgboost") self$trainer <- trainer_xgboost$new(private$objective)
-      if(private$backend == "ranger") self$trainer <- trainer_ranger$new(private$objective)
-      if(private$backend == "catboost") self$trainer <- trainer_catboost$new(private$objective)
-      if(private$backend == "rf") self$trainer <- trainer_rf$new(private$objective)
-      if(private$backend == "rpart") self$trainer <- trainer_rpart$new(private$objective)
-      
-      self$eval <- evaluator$new(private$objective)
+      if(self$backend == "keras"){
+        self$fit <- fit_keras
+        self$predict <- predict_keras
+        #self$imp <- feature_imp_keras
+        self$save_model <- save_keras
+      }
+      if(self$backend == "xgboost"){
+        self$fit <- fit_xgboost
+        self$predict <- predict_xgboost
+        self$imp <- feature_imp_xgboost
+        self$save_model <- save_xgboost
+      }
+      if(self$backend == "lightgbm"){
+        self$fit <- fit_lightgbm
+        self$predict <- predict_lightgbm
+      }
+      if(self$backend == "catboost"){
+        self$fit <- fit_catboost
+        self$predict <- predict_catboost
+        self$imp <- h2o_feature_imp
+      }
+      # if(self$backend == "rgf"){
+      #   self$fit <- fit_rgf
+      #   self$predict <- predict_rgf
+      # }
+      if(str_detect(self$backend, "h2o_")){
+        
+        self$predict <- predict_h2o
+        self$imp <- feature_imp_h2o
+        self$save_model <- save_h2o
+        
+        if(self$backend == "h2o_glm") self$fit <- fit_h2o_glm
+        if(self$backend == "h2o_rf") self$fit <- fit_h2o_rf
+        if(self$backend == "h2o_nb")  self$fit <- fit_h2o_nb
+        if(self$backend == "h2o_svm") self$fit <- fit_h2o_svm
+        if(self$backend == "h2o_gbm") self$fit <- fit_h2o_gbm
+        if(self$backend == "h2o_xgboost") self$fit <- fit_h2o_xgboost
+        if(self$backend == "h2o_dnn") self$fit <- fit_h2o_dnn
+        if(self$backend == "h2o_cox") self$fit <- fit_h2o_cox
+      }
+      if(str_detect(self$backend, "sk_")){
+        
+        self$predict <- predict_sk
+        
+        if(self$backend == "sk_glm") self$fit <- fit_sk_glm
+        if(self$backend == "sk_tree") self$fit <- fit_sk_tree
+      }
+      if(self$backend == "ranger"){
+        self$fit <- fit_ranger
+        self$predict <- predict_ranger
+      }
+      if(self$backend == "randomForest"){
+        self$fit <- fit_randomForest
+        self$predict <- predict_randomForest
+      }
+      if(self$backend == "rpart"){
+        self$fit <- fit_rpart
+        self$predict <- predict_rpart
+      }
     }
   ),
   public = list(
-    ### Initalize variables
-    splits = NULL,
+    
+    ### initalize variables
+    ### methods 
+    fit = NULL,
+    predict = NULL,
+    imp = NULL,
+    save_model = NULL,
+    ### outputs
+    meta = NULL,
+    task = NULL,
+    backend = NULL,
     data = NULL,
-    param = NULL,
-    trainer = NULL,
-    eval = NULL, 
-    results = NULL,
-    meta = NULL, 
-    ### Main Function
-    initialize = function(backend, folder = "") {
+    params = NULL,
+    model = NULL,
+    preds = NULL,
+    imps = NULL,
+    metrics = NULL,
+    
+    ### init fun
+    initialize = function(task, backend) {
       
-      private$set_backend(backend)
+      self$meta$task <- task
+      self$meta$backend <- backend
+      self$meta$start <- Sys.time()
       
+      self$task <- task
+      self$backend <- backend
+    
     },
-    get_entry = function(name){
-      return(list(private = private[[name]], self = self[[name]]) %>% compact %>% .[[1]])
-    },
-    set_splits = function(splits){
-      self$splits <- splits
-    },
-    set_param = function(list){
-      self$param <- list
-    },
-    get_param = function(){
-      return(self$param)
+    feed = function(params, data){
+      self$params <- c(self$params, params)
+      self$data <- data
+      
+      self$meta$n_train <- nrow(data[[1]]$x)
+      self$meta$n_test <- nrow(data[[2]]$x)
     },
     train = function(){
+      
+      private$init_backend()
     
       tictoc::tic()
       
-      self$trainer$set(param = self$param, data = self$splits)
-      self$trainer$fit()
+      self$model <- self$fit(self)
       
       time <- tictoc::toc(log = T)
       
       suppressMessages(
-        self$param$duration <- as.numeric(time$toc - time$tic) %>% round(1)
+        self$meta$runtime <- as.numeric(time$toc - time$tic) %>% round(1)
       )
       
-      self$param <- self$trainer$param
     },
     test = function(dev = F){
       
-      preds <- self$trainer$predict()
+      ### perform main prediction
+      preds <- self$predict(self)
       
+      ### dev gate
       if(dev) return(preds)
       
-      self$eval$eval(target = self$splits$test$y, pred = preds, meta = self$splits$test$meta)
+      ### bind target
+      if(is.null(ncol(self$data$test$y))) preds <- preds %>% mutate(target = self$data$test$target)
       
-      self$results <- self$trainer$param %>%
-        keep(~is.atomic(.x) & length(.x) == 1) %>%
-        bind_cols %>%
-        mutate(metrics = list(self$eval$perform)) %>%
-        mutate(timestamp = as.character(Sys.time()))
+      ### bind meta
+      if(!is.null(self$data$test$meta)){
+        self$preds <- cbind(preds, self$data$test$meta)
+      } else {
+        self$preds <- preds
+      }
+      
+      ### compute eval metrics 
+      self$metrics <- eval_model(self)
+      
+      ### compute feature importance
+      if(!is.null(self$imp)){
+        self$imps <- self$imp(self)
+      }
+      
+      self$meta$end <- Sys.time()
+    },
+    add_metrics = function(cv){
+      self$metrics <- cbind(self$metrics, cv)
+    },
+    save = function(path = NULL){
+      
+      if(is.null(path)) path <- "."
+      
+      ### model
+      self$save_model <- purrr::possibly(self$save_model, NULL)
+      self$save_model(self$model, "model", path)
+      
+      ### meta
+      if(!is.null(self$meta)) save_json_pos(self$meta, "meta", path)
+      
+      ### params
+      params <- self$params %>% discard(is.list)
+      if(!is.null(params)) save_json_pos(params, "params", path)
+      
+      ### metrics
+      if(!is.null(self$metrics)) save_json_pos(self$metrics, "metrics", path)
+      
+      ### imps
+      if(!is.null(self$imps)) save_rds_pos(self$imps, "imps", path)
+      
+      ### preds
+      if(!is.null(self$preds)) save_rds_pos(self$preds, "preds", path)
     }
-    # report = function(){
-    #   ### save model container
-    #   private$save_model_container()
-    #   
-    #   ### save plots
-    #   ggsave_pos <- possibly(ggsave, NULL)
-    #   self$eval$plots %>% 
-    #     iwalk(~ggsave_pos(.x, file = glue::glue("{private$new_path}/{.y}.png")))
-    # }
   )
 )
 
 #' fit_learner
+#' 
 #' @export
-fit_learner <- function(param, splits, backend = "xgboost:binary", dev = F){
-  model <- deeplyr::learner$new(backend)
-  model$set_param(param)
-  model$set_splits(splits)
-  model$train()
-  model$test(dev = dev)
-  return(model)
+fit_learner <- function(params, data, task, backend, path = NULL, dev = F){
+  f <- learner$new(task, backend)
+  f$feed(params, data)
+  f$train()
+  f$test()
+  if(!is.null(path)) f$save(path)
+  return(f)
+}
+
+#' split_cv
+#' 
+#' @export
+split_cv <- function(data, fold){
+  df <- list()
+  ### training split
+  df$train$x <- data[-fold] %>% map("x") %>% rlist::list.rbind()
+  df$train$y <- data[-fold] %>% map("y") %>% unlist
+  df$train$target <- data[-fold] %>% map("target") %>% unlist
+  df$train$meta <- data[-fold] %>% map("meta") %>% rlist::list.rbind()
+  
+  ### testing split
+  df$test$x <- data[fold] %>% map("x") %>% rlist::list.rbind()
+  df$test$y <- data[fold] %>% map("y") %>% unlist
+  df$test$target <- data[fold] %>% map("target") %>% unlist
+  df$test$meta <- data[fold] %>% map("meta") %>% rlist::list.rbind()
+  
+  return(df)
+}
+
+#' fit_cv
+#' 
+#' @export
+fit_cv <- function(params, data, task, backend, path = NULL, dev = F){
+  
+  folds <- 1:length(data) %>%
+    purrr::map_dfr(~{
+      df <- split_cv(data, .x)
+      f <- fit_learner(params = params, data = df, task = task, backend = backend)
+      metrics <- f$metrics %>% bind_cols %>% mutate(fold = .x)
+      return(metrics)
+    })
+  
+  cv <- folds %>%
+    dplyr::select(-fold) %>%
+    dplyr::summarise_all(mean) %>%
+    dplyr::rename_all(~paste0("cv_", .x)) %>%
+    dplyr::mutate(folds = list(folds))
+  
+  if(task == "linear") best <- folds %>% dplyr::arrange(rmse) %>% head(1) %>% dplyr::pull(fold)
+  if(task %in% c("binary", "multi")) best <- folds %>% dplyr::arrange(dplyr::desc(accuracy)) %>% head(1) %>% dplyr::pull(fold)
+
+  ### retrain best fit
+  splits <- split_cv(data, best)
+  
+  ### custom model object
+  f <- learner$new(task, backend)
+  f$feed(params, splits)
+  f$train()
+  f$test()
+  f$add_metrics(cv)
+  if(!is.null(path)) f$save(path)
+  
+  return(f)
 }

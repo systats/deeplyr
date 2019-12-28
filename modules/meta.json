@@ -1,0 +1,7 @@
+[
+  {
+    "task": "binary",
+    "backend": "keras",
+    "runtime": 2.3
+  }
+]

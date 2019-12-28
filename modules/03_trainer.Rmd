@@ -11,145 +11,405 @@ knitr::opts_chunk$set(echo = TRUE)
 # Packages
 
 ```{r}
-pacman::p_load(tidyverse, purrr, furrr, keras, xgboost)
+pacman::p_load(tidyverse, purrr, furrr, keras, xgboost, h2o)
 devtools::document()
-devtools::load_all()
+#devtools::load_all()
 options(scipen = 999)
 # devtools::install()
 ```
 
-
-# Main Function
-
-```{r}
-split_sample <- function(x, y, id = NULL, val = F, bet = F, oos = F, balance = NULL){
-  sp <- splitter$new()
-  sp$set(x, y, id)
-  sp$split(val, bet, oos, balance)
-  return(sp)
-}
-```
 
 
 
 # Test Data
 
 ```{r}
+N <- 1000
 df <- tibble(
-  id = sample(1:100, 1000, replace = T),
-  split_id = sample(1:3, size = 1000, prob = c(.8, .1, .1), replace = T),
-  x1 = rnorm(1000),
-  x2 = rnorm(1000),
-  z = 2*x1 + 3*x2,
+  split_id = sample(1:3, size = N, prob = c(.8, .1, .1), replace = T),
+  x1 = rnorm(N),
+  x2 = rnorm(N),
+  z = 2*x1 + 3*x2 + rnorm(N),
   y = ifelse(z > mean(z), 1, 0), #2*x1 + 2*x2 + rnorm(1000)
   y_multi0 = case_when(z > (mean(z)+.2*sd(z)) ~ 0, z < (mean(z)-.2*sd(z)) ~ 2, T ~ 1),
   y_multi1 = y_multi0 + 1
-) %>% 
-  select(split_id, contains("y"), id, contains("x")) %>%
+) %>%
   glimpse
 ```
 
+
+# Linear
+
 ```{r}
-### Data
-sp <- split_sample(x = df[,c("x1", "x2")], y = df$y, )
-sp$splits %>% iwalk(glimpse)
+sp_linear <- split_sample(x = df[,c("x1", "x2")], id = df$split_id, y = df$z, meta = df)
+sp_linear %>% iwalk(glimpse)
 ```
 
 
-# Trainer
+## keras
 
-## XGBoost
-
-```{r}
+```{r, eval=F}
 devtools::document()
-fit1 <- fit_learner(list(), sp$splits, "xgboost:binary")
-fit1$eval$preds
+li01 <- fit_learner(list(), sp_linear, task = "linear", backend = "keras")
+li01$preds %>% glimpse
 ```
 
 
-## Keras
+## xgboost
+
+```{r, eval=F}
+devtools::document()
+li02 <- fit_learner(list(), sp_linear, task = "linear", backend = "xgboost")
+# li02$preds %>% glimpse
+# li02$metrics %>% glimpse
+# li02$imps %>% glimpse
+li02$save("test")
+```
+
+
+## ranger
 
 ```{r}
-devtools::document()
-# custom_keras <- function(input_dim = 20, output_dim = 1, output_fun = "sigmoid"){
-#   keras::keras_model_sequential() %>%
-#     keras::layer_dense(units = 10, activation = "relu", input_shape = input_dim) %>%
-#     keras::layer_dense(units = output_dim, activation = output_fun)
-# }
-#pkeras <- list(input_dim = 2, output_dim = 1, output_fun = "sigmoid", model = custom_keras)
-fit1 <- fit_learner(list(), sp$splits, "keras:binary")
-fit1$eval$preds
+li03 <- fit_learner(list(), sp_linear, task = "linear", backend = "ranger")
+li03$preds %>% glimpse
 ```
 
-
-## RANGER
+## catboost
 
 ```{r}
-devtools::document()
-fit1 <- fit_learner(list(min_node_size = 5), sp$splits, "ranger:binary", dev = F)
-fit1$test()
-fit1$eval$preds
+li04 <- fit_learner(list(iterations = 100), sp_linear, task = "linear", backend = "catboost")
+li04$preds %>% glimpse
 ```
 
-
-## CATBOOST
-
-* catboost-darwin-0.17.1
-* catboost-R-Darwin-0.17.1.tgz
-* devtools::install_url('https://github.com/catboost/catboost/releases/download/v0.17.1/catboost-R-Darwin-0.17.1.tgz', args = c("--no-multiarch"))
-
+## rpart
 
 ```{r}
-devtools::document()
-fit1 <- fit_learner(NULL, sp$splits, "catboost:binary")
-fit1$eval$preds
+li05 <- fit_learner(list(), sp_linear, task = "linear", backend = "rpart")
+li05$preds %>% glimpse
 ```
-
-
-
-## RPART
-
-```{r}
-devtools::document()
-#rpart::rpart()
-#rpart::rpart.control()
-fit1 <- fit_learner(NULL, sp$splits, "rpart:binary")
-fit1$eval$preds
-```
-
 
 ## randomForest
 
 ```{r}
+li06 <- fit_learner(list(), sp_linear, task = "linear", backend = "randomForest")
+li06$preds %>% glimpse
+```
+
+
+## h2o glm
+
+```{r}
+h2o::h2o.init()
+
+
+dir("test")
 devtools::document()
-fit1 <- fit_learner(NULL, sp$splits, "rf:binary")
-fit1$eval$preds
+li07 <- fit_learner(list(), sp_linear, task = "linear", backend = "h2o_glm", path = "test")
+#li07$preds %>% glimpse 
+```
+
+
+## h2o rf
+
+```{r}
+devtools::document()
+li08 <- fit_learner(list(), sp_linear$splits, task = "linear", backend = "h2o_rf")
+li08$preds %>% glimpse
+```
+
+
+## h2o gbm
+
+```{r}
+devtools::document()
+fit2gbm <- fit_learner(list(), sp_linear$splits, task = "linear", backend = "h2o_gbm")
+fit2gbm$preds %>% glimpse
+```
+
+
+## h2o xgboost
+
+```{r}
+devtools::document()
+fit2xgboost <- fit_learner(list(), sp_linear$splits, task = "linear", backend = "h2o_xgboost")
+fit2xgboost$preds %>% glimpse
+```
+
+
+## h2o dnn
+
+```{r}
+devtools::document()
+fit1dnn <- fit_learner(list(), sp_linear$splits, task = "linear", backend = "h2o_dnn")
+fit1dnn$preds %>% glimpse
 ```
 
 
 
 
-
-# All together
+# Binary
 
 ```{r}
-all <- c("keras:binary", "xgboost:binary", "catboost:binary", "ranger:binary", "rpart:binary", "rf:binary") %>% 
-  imap(~{
-    fit1 <- fit_learner(NULL, sp$splits, .x)
-    pack <- .x %>% str_extract("\\w+")
-    fit1$eval$preds  %>% select(id, target, everything()) %>% rename_at(-1:-2, ~paste0(.x, "_", pack))
-  }) %>%
-  reduce(left_join)
+sp_binary <- split_sample(x = df[,c("x1", "x2")], id = df$split_id, y = df$y, meta = df)
+```
 
-all %>% 
-  select(contains("pred")) %>% 
-  imap(~{
-    mean(.x == all$target)
-  })
 
-sp_new <- split_sample(x = all %>% select(contains("prob"), -contains("keras")), y = all$target)
-fit1 <- fit_learner(NULL, sp_new$splits, "xgboost:binary")
-mean(fit1$eval$preds$pred == fit1$eval$preds$target)
+## keras
+
+```{r}
+# self <- list(
+#   params = list(),
+#   data = sp_linear$splits,
+#   task = "linear", 
+#   backend = "keras"
+# )
+
+
+fit20 <- fit_learner(list(), sp_binary, task = "binary", backend = "keras", path = "test")
+fit20$preds %>% glimpse
+
+
+sp_binary_cv <- split_sample(x = df[,c("x1", "x2")], id = , y = df$y, meta = df)
+fit20 <- fit_cv(list(), sp_binary_cv, task = "binary", backend = "keras", path = "test")
+fit20$preds %>% glimpse
+```
+
+
+
+## xgboost
+
+```{r}
+fit21 <- fit_learner(list(), sp_binary, task = "binary", backend = "xgboost")
+fit21$preds %>% glimpse
+```
+
+## ranger
+
+```{r}
+fit22 <- fit_learner(list(), sp_binary, task = "binary", backend = "ranger")
+fit22$preds %>% glimpse
+```
+
+## catboost
+
+```{r}
+fit23 <- fit_learner(list(iterations = 100), sp_binary, task = "binary", backend = "catboost")
+fit23$preds %>% glimpse
+```
+
+## rpart
+
+```{r}
+fit24 <- fit_learner(list(), sp_binary, task = "binary", backend = "rpart")
+fit24$preds %>% glimpse
+```
+
+## randomForest
+
+```{r}
+fit25 <- fit_learner(list(), sp_binary, task = "binary", backend = "randomForest")
+fit25$preds %>% glimpse
+```
+
+## h2o glm
+
+```{r}
+library(h2o)
+h2o.init()
+
+devtools::document()
+fit27 <- fit_learner(list(), sp_binary, task = "binary", backend = "h2o_glm")
+fit27$preds %>% glimpse
+fit27$imps
+fit27$metrics
+```
+
+## h2o rf
+
+```{r}
+library(h2o)
+h2o.init()
+
+devtools::document()
+fit28 <- fit_learner(list(), sp_binary, task = "binary", backend = "h2o_rf")
+fit28$preds %>% glimpse
+```
+
+## h2o nb
+
+```{r}
+library(h2o)
+h2o.init()
+
+devtools::document()
+fit29 <- fit_learner(list(), sp_binary, task = "binary", backend = "h2o_nb")
+fit29$preds %>% glimpse
+```
+
+
+## h2o svm
+
+```{r}
+fit2svm <- fit_learner(list(), sp_binary, task = "binary", backend = "h2o_svm")
+fit2svm$preds %>% glimpse
+```
+
+
+## h2o gbm
+
+```{r}
+devtools::document()
+fit2gbm <- fit_learner(list(), sp_binary, task = "multi", backend = "h2o_gbm")
+fit2gbm$preds %>% glimpse
+```
+
+
+## h2o xgboost
+
+```{r}
+devtools::document()
+fit2xgboost <- fit_learner(list(), sp_binary, task = "binary", backend = "h2o_xgboost")
+fit2xgboost$preds %>% glimpse
+```
+
+
+
+## h2o dnn
+
+```{r}
+devtools::document()
+fit2dnn <- fit_learner(list(), sp_binary, task = "binary", backend = "h2o_dnn")
+fit2dnn$preds %>% glimpse
+```
+
+
+
+# Multi
+
+```{r}
+sp_multi <- split_sample(x = df[,c("x1", "x2")], y = df$y_multi0, id = df$split_id, meta = df)
+```
+
+
+## keras
+
+```{r, eval=F}
+fit30 <- fit_learner(list(), sp_multi, task = "multi", backend = "keras")
+fit30$preds %>% glimpse
+```
+
+## xgboost
+
+```{r, eval=F}
+devtools::document()
+fit31 <- fit_learner(list(num_class = 3), sp_multi, task = "multi", backend = "xgboost")
+fit31$metrics
+```
+
+
+## ranger
+
+```{r}
+fit32 <- fit_learner(list(), sp_multi, task = "multi", backend = "ranger")
+fit32$preds %>% glimpse
+```
+
+
+## catboost
+
+```{r}
+fit33 <- fit_learner(list(iterations = 100), sp_multi, task = "multi", backend = "catboost")
+fit33$preds %>% glimpse
+```
+
+## rpart
+
+```{r}
+#fit34 <- fit_learner(list(), sp_multi, task = "multi", backend = "rpart")
+#fit34$preds %>% glimpse
+```
+
+## randomForest
+
+```{r}
+# fit25 <- fit_learner(list(), sp_multi, task = "multi", backend = "randomForest")
+# fit25$preds %>% glimpse
+```
+
+
+## h2o glm
+
+```{r}
+library(h2o)
+h2o.init()
+
+devtools::document()
+fit36 <- fit_learner(list(), sp_multi, task = "multi", backend = "h2o_glm")
+
+fit36$preds %>% glimpse
+```
+
+
+## h2o rf
+
+```{r}
+library(h2o)
+h2o.init()
+
+devtools::document()
+fit38 <- fit_learner(list(), sp_multi, task = "multi", backend = "h2o_rf")
+fit38$preds %>% glimpse
+```
+
+
+## h2o nb
+
+```{r}
+devtools::document()
+fit39 <- fit_learner(list(), sp_multi, task = "multi", backend = "h2o_nb")
+fit39$preds %>% glimpse
+```
+
+
+## h2o gbm
+
+```{r}
+devtools::document()
+fit3gbm <- fit_learner(list(), sp_multi, task = "multi", backend = "h2o_gbm")
+fit3gbm$preds %>% glimpse
+```
+
+
+## h2o xgboost
+
+```{r}
+devtools::document()
+fit3xgboost <- fit_learner(list(), sp_multi, task = "multi", backend = "h2o_xgboost")
+fit3xgboost$preds %>% glimpse
+```
+
+
+## h2o dnn
+
+```{r}
+devtools::document()
+fit3dnn <- fit_learner(list(), sp_multi, task = "multi", backend = "h2o_dnn")
+fit3dnn$preds %>% glimpse
+```
+
+
+
+
+# Oridinal
+
+
+```{r}
+library(h2o)
+h2o.init()
+
+devtools::document()
+fit37 <- fit_learner(list(), sp_multi, task = "ordinal", backend = "h2o_glm")
+fit37$preds %>% glimpse
 ```
 
 
@@ -157,64 +417,22 @@ mean(fit1$eval$preds$pred == fit1$eval$preds$target)
 
 # Other
 
-
-## LightGBM
-
-* https://github.com/microsoft/LightGBM/tree/master/R-package
-**Not Working Right Now**
-
-### Either use Docker
-
-```{bash}
-mkdir lightgbm-docker
-cd lightgbm-docker
-wget https://raw.githubusercontent.com/Microsoft/LightGBM/master/docker/dockerfile-r
-docker build -t lightgbm-r -f dockerfile-r .
-```
-
-### Or setup up your system
-
-```{bash}
-brew install cmake
-brew install libomp
-brew install cmake
-brew install gcc
-```
-
-```{bash}
-git clone --recursive https://github.com/microsoft/LightGBM
-cd LightGBM
-Rscript build_r.R
-```
-
-
 ### Then Install R Package
 
-```{r}
+```{r, eval = F}
 # devtools::install_github("Microsoft/LightGBM", subdir = "R-package")
 # devtools::install_github("Laurae2/lgbdl")
 lgbdl::lgb.dl(commit = "master",
        compiler = "vs",
        repo = "https://github.com/microsoft/LightGBM")
-```
 
-
-```{r}
 library(lightgbm)
 data(agaricus.train, package='lightgbm')
 dtrain <- lgb.Dataset(as.matrix(mtcars[,1:2]), label=mtcars$vs)
 params <- list(objective="regression", metric="l2")
 model <- lgb.cv(params, dtrain, 10, nfold=5, min_data=1, learning_rate=1, early_stopping_rounds=10)
-```
 
 
-
-
-
-
-## GBM3
-
-```{r}
 # devtools::install_github("gbm-developers/gbm3")
 # library(gbm3)
 # available_distributions()

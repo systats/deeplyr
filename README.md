@@ -30,7 +30,7 @@ f1 <- fit_cv(params, data, task = "binary", backend = "xgboost")
 f1$save(".. your path ...")
 ```
 
-Other libraries that are yet not fully supported are
+Other libraries that are yet not fully supporteds
 
   - `ranger`
   - `randomForest`

@@ -139,7 +139,7 @@ fit_keras <- function(self){
       val_data <- list(as.matrix(self$data$val$x), self$data$val$y)
       self$params$validation_split <- NULL
    } else {
-      self$params$validation_split <- .2
+      #self$params$validation_split <- .2
       val_data = NULL
    }
 

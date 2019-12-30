@@ -54,3 +54,12 @@ Most common prediction tasks are
 * *poisson*
 
 
+
+```{r}
+tinytest::test_all()
+```
+
+```{r}
+devtools::session_info()
+```
+

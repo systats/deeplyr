@@ -23,24 +23,38 @@ fit_tokenizer <- function(text, max_words = 10000, max_docs = .5, min_word = 3, 
   return(tok)
 }
 
+#' tokenize_seq
+#' @export
+tokenize_seq <- function(text, tok, seq_len){
+  tok %>% 
+    keras::texts_to_sequences(texts = text) %>% 
+    keras::pad_sequences(maxlen = seq_len)
+}
+
 #' tokenize_text
 #' @export
-tokenize_text <- function(text, tok, seq_len = 100, multi = F){
+tokenize_text <- function(text, tok, seq_len = 100, multi = F, n_split = 10000){
   
-  if(multi){
-    tok %>% 
-      keras::texts_to_sequences(texts = text) %>% 
-      keras::pad_sequences(maxlen = seq_len)
+  if(!multi){
+    
+    tokenize_seq(text, tok, seq_len)
+    
   } else {
     
-    text %>% 
-      split(1:length(.) %/% 1000) %>%
+    ### nasty work around for mac
+    tmp <- tempdir()
+    keras::save_text_tokenizer(tok, filename = glue::glue("{tmp}/tok"))
+    
+    out <- text %>%
+      split(1:length(.) %/% n_split) %>%
       furrr::future_map(~{
-        tok %>% 
-          keras::texts_to_sequences(texts = .x) %>% 
-          keras::pad_sequences(maxlen = seq_len)
+        ### part 2 work around
+        tok <- keras::load_text_tokenizer(glue::glue("{tmp}/tok"))
+        tokenize_seq(.x, tok, seq_len)
       }, .progress = T) %>% 
       rlist::list.rbind()
+    
+    rm(tmp)
+    return(out)
   }
-  
 }

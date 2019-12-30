@@ -4,7 +4,7 @@
 \alias{tokenize_text}
 \title{tokenize_text}
 \usage{
-tokenize_text(text, tok, seq_len = 100, multi = F)
+tokenize_text(text, tok, seq_len = 100, multi = F, n_split = 10000)
 }
 \description{
 tokenize_text

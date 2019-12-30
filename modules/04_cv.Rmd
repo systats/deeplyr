@@ -54,7 +54,9 @@ sp_binary <- split_sample(x = df[,c("x1", "x2")], id = df$split_id, y = df$y, me
 ```{r}
 devtools::document()
 li01 <- fit_cv(list(epochs = 1), sp_binary, task = "binary", backend = "keras", path = "test")
-li01$preds %>% glimpse
+li01$metrics %>% glimpse
+
+li01$model
 ```
 
 

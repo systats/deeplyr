@@ -1,0 +1,72 @@
+---
+title: "Trainer"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+# Packages
+
+```{r}
+pacman::p_load(tidyverse, purrr, furrr, keras, xgboost, h2o, deeplyr, mlgraph)
+devtools::document()
+#devtools::load_all()
+options(scipen = 999)
+# devtools::install()
+
+options(future.globals.maxSize = 10^6)
+```
+
+repex
+
+```{r}
+library(dplyr)
+library(keras) 
+library(furrr)
+
+plan(multiprocess)
+
+### set up text tokenizer
+df <- tidytext::sentiments
+tok <- keras::text_tokenizer(3000)
+keras::fit_text_tokenizer(tok, x = df$word)
+
+### works fine so far
+tok %>% 
+  keras::texts_to_sequences(texts = df$word) %>% 
+  keras::pad_sequences(maxlen = 2)
+
+### new workflow
+df$word %>%
+  split(1:length(.) %/% 1000) %>%
+  purrr::map(~{
+    tok %>% 
+      keras::texts_to_sequences(texts = .x) %>% 
+      keras::pad_sequences(maxlen = 2)
+  }) %>% 
+  rlist::list.rbind()
+
+### parallization does not work
+df$word %>%
+  split(1:length(.) %/% 1000) %>%
+  furrr::future_map(~{
+    tok %>% 
+      keras::texts_to_sequences(texts = .x) %>% 
+      keras::pad_sequences(maxlen = 2)
+  }, .progress = T) %>% 
+  rlist::list.rbind()
+```
+
+
+
+```{r}
+future::plan(multiprocess)
+
+df <- 1:100 %>% map_dfr(~{tidytext::sentiments})
+tok <- deeplyr::fit_tokenizer(text = df$word, max_words = 2000)
+mat1 <- tokenize(text = df$word, tok = tok, seq_len = 2, multi = F)
+mat2 <- tokenize_text(text = df$word, tok = tok, seq_len = 2, multi = T)
+```

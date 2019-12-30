@@ -168,11 +168,11 @@ learner <- R6::R6Class("learner",
       ### metrics
       if(!is.null(self$metrics)) save_json_pos(self$metrics, "metrics", path)
       
-      ### imps
-      if(!is.null(self$imps)) save_rds_pos(self$imps, "imps", path)
-      
       ### preds
       if(!is.null(self$preds)) save_rds_pos(self$preds, "preds", path)
+      
+      ### imps
+      if(!is.null(self$imps)) save_rds_pos(self$imps, "imps", path)
     }
   )
 )
@@ -214,31 +214,38 @@ split_cv <- function(data, fold){
 #' @export
 fit_cv <- function(params, data, task, backend, path = NULL, dev = F){
   
-  folds <- 1:length(data) %>%
-    purrr::map_dfr(~{
+  ### calculate a few times the same model with rotating data
+  models <- 1:length(data) %>%
+    purrr::map(~{
       df <- split_cv(data, .x)
-      f <- fit_learner(params = params, data = df, task = task, backend = backend)
-      metrics <- f$metrics %>% bind_cols %>% mutate(fold = .x)
-      return(metrics)
+      fit_learner(params, data = df, task, backend)
     })
   
+  ### extract metrics form cv models
+  folds <- models %>% 
+    purrr::map_dfr("metrics") %>% 
+    dplyr::mutate(fold = 1:n())
+  
+  ### generate avergae fold stats
   cv <- folds %>%
     dplyr::select(-fold) %>%
     dplyr::summarise_all(mean) %>%
     dplyr::rename_all(~paste0("cv_", .x)) %>%
     dplyr::mutate(folds = list(folds))
   
+  ### retrain best fit
+  # splits <- split_cv(data, best)
+  ### train custom model object
+  # f <- learner$new(task, backend)
+  # f$feed(params, splits)
+  # f$train()
+  # f$test()
+  
+  ### determine best model/fold to be extracted
   if(task == "linear") best <- folds %>% dplyr::arrange(rmse) %>% head(1) %>% dplyr::pull(fold)
   if(task %in% c("binary", "multi")) best <- folds %>% dplyr::arrange(dplyr::desc(accuracy)) %>% head(1) %>% dplyr::pull(fold)
-
-  ### retrain best fit
-  splits <- split_cv(data, best)
   
-  ### custom model object
-  f <- learner$new(task, backend)
-  f$feed(params, splits)
-  f$train()
-  f$test()
+  f <- models[[best]]
   f$add_metrics(cv)
   if(!is.null(path)) f$save(path)
   

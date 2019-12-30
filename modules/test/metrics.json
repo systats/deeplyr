@@ -1,10 +1,80 @@
 [
   {
-    "accuracy": 0.8557,
-    "precision": 0.803,
-    "recall": 0.9815,
-    "fbeta_score": 0.8833,
-    "ce": 0.1443,
-    "f1": 1
+    "accuracy": 0.7767,
+    "precision": 0.8846,
+    "recall": 0.6509,
+    "fbeta_score": 0.75,
+    "ce": 0.2233,
+    "f1": 1,
+    "ll": 0.6008,
+    "logloss": 0.6008,
+    "auc": 0.9251,
+    "cv_accuracy": 0.5471,
+    "cv_recall": 0.3317,
+    "cv_ce": 0.4529,
+    "cv_f1": 0.9333,
+    "cv_ll": 0.7117,
+    "cv_logloss": 0.7117,
+    "cv_auc": 0.5509,
+    "folds": [
+      {
+        "accuracy": 0.4663,
+        "precision": 1,
+        "recall": 0.0263,
+        "fbeta_score": 0.0513,
+        "ce": 0.5337,
+        "f1": 1,
+        "ll": 0.697,
+        "logloss": 0.697,
+        "auc": 0.6794,
+        "fold": 1
+      },
+      {
+        "accuracy": 0.4624,
+        "precision": 0.1667,
+        "recall": 0.0104,
+        "fbeta_score": 0.0196,
+        "ce": 0.5376,
+        "f1": 1,
+        "ll": 0.8121,
+        "logloss": 0.8121,
+        "auc": 0.1177,
+        "fold": 2
+      },
+      {
+        "accuracy": 0.7767,
+        "precision": 0.8846,
+        "recall": 0.6509,
+        "fbeta_score": 0.75,
+        "ce": 0.2233,
+        "f1": 1,
+        "ll": 0.6008,
+        "logloss": 0.6008,
+        "auc": 0.9251,
+        "fold": 3
+      },
+      {
+        "accuracy": 0.5172,
+        "recall": 0,
+        "ce": 0.4828,
+        "f1": 0.6667,
+        "ll": 0.7334,
+        "logloss": 0.7334,
+        "auc": 0.4735,
+        "fold": 4
+      },
+      {
+        "accuracy": 0.5127,
+        "precision": 0.5181,
+        "recall": 0.9709,
+        "fbeta_score": 0.6757,
+        "ce": 0.4873,
+        "f1": 1,
+        "ll": 0.7155,
+        "logloss": 0.7155,
+        "auc": 0.5588,
+        "fold": 5
+      }
+    ]
   }
 ]

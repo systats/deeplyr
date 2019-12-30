@@ -47,7 +47,6 @@ df %>%
 ```{r}
 sp_binary <- split_sample(x = df[,c("x1", "x2")], id = df$split, y = df$y, meta = df)
 sp_binary_cv <- split_sample(x = df[,c("x1", "x2")], id = df$split_cv, y = df$y, meta = df)
-#sp_binary %>% iwalk(glimpse)
 ```
 
 

@@ -163,6 +163,7 @@ learner <- R6::R6Class("learner",
       
       ### params
       params <- self$params %>% discard(is.list)
+      print(params)
       if(!is.null(params)) save_json_pos(params, "params", path)
       
       ### metrics

@@ -1,12 +1,12 @@
 [
   {
+    "batch_size": 166,
     "epochs": 1,
     "output_dim": 1,
     "output_fun": "sigmoid",
     "loss": "binary_crossentropy",
     "metrics": "accuracy",
     "optimizer": "adam",
-    "batch_size": 30,
     "verbose": 1
   }
 ]

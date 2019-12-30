@@ -26,7 +26,7 @@ options(scipen = 999)
 ```{r}
 N <- 1000
 df <- tibble(
-  split_id = sample(1:5, size = N, prob = rep(.2, 5), replace = T),
+  split_cv = sample(1:5, size = N, prob = rep(.2, 5), replace = T),
   x1 = rnorm(N),
   x2 = rnorm(N),
   z = 2*x1 + 3*x2 + rnorm(N),
@@ -37,14 +37,14 @@ df <- tibble(
   glimpse
 
 df %>%
-  count(split_id, y)
+  count(split_cv, y)
 ```
 
 
 # Binary
 
 ```{r}
-sp_binary <- split_sample(x = df[,c("x1", "x2")], id = df$split_id, y = df$y, meta = df)
+sp_binary <- split_sample(x = df[,c("x1", "x2")], id = df$split_cv, y = df$y, meta = df)
 #sp_binary %>% iwalk(glimpse)
 ```
 
@@ -58,6 +58,35 @@ li01$metrics %>% glimpse
 
 li01$model
 ```
+
+
+```{r}
+hyper <- list(
+  batch_size =  p_integer(30, 300)
+)
+
+# dials::value_seq(hyper_cnn_lstm$input_dim, 100)
+params <- hyper %>% 
+  dials::grid_random(size = 10) %>%
+  dplyr::mutate(
+    epochs = 1
+  ) %>%
+  as_tibble()
+
+class(params)
+
+c <- deeplyr::grid$new("exp")
+
+funny <- function(params, data, path) fit_cv(params, data, task = "binary", backend = "keras", path)
+
+c$run(
+  data = sp_binary,
+  process = funny, 
+  params = params
+)
+```
+
+
 
 
 

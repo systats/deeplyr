@@ -97,7 +97,6 @@ fit_keras <- function(self){
    
    if(is.null(self$params$batch_size)) self$params$batch_size <- 30
    if(is.null(self$params$verbose)) self$params$verbose <- 1
-   if(is.null(self$params$callbacks)) self$params$callbacks <- c(keras::callback_early_stopping(monitor = "val_loss", patience = 1, mode = "auto"))
 
    # define classweights by default
    if(self$task != "linear"){
@@ -138,6 +137,7 @@ fit_keras <- function(self){
    if(!is.null(self$data$val$x)){
       val_data <- list(as.matrix(self$data$val$x), self$data$val$y)
       self$params$validation_split <- NULL
+      if(is.null(self$params$callbacks)) self$params$callbacks <- c(keras::callback_early_stopping(monitor = "val_loss", patience = 1, mode = "auto"))
    } else {
       #self$params$validation_split <- .2
       val_data = NULL
@@ -174,7 +174,7 @@ predict_keras <- function(self, x_test = NULL){
    } else if(self$task == "binary"){
       prob <- pred[,1]
       pred <- ifelse(prob > .5, 1, 0)
-      tibble(pred, prob0 = 1 - prob, prob1 = prob)
+      tibble(pred, prob)
    } else if(self$task == "multi"){
       probs <- as_tibble(pred) %>% set_names(paste0("prob", 1:ncol(pred)))
       pred <- pred %>% split(1:nrow(.)) %>% map_int(which.max)

@@ -34,7 +34,8 @@ predict_h2o <- function(self, x_test = NULL){
     
     preds <- preds %>% 
       purrr::set_names(c("pred", paste0("prob", 0:(ncol(preds) - 2)))) %>% 
-      dplyr::mutate_if(is.numeric, round, 3)
+      dplyr::mutate_if(is.numeric, round, 3) %>%
+      dplyr::transmute(pred, prob = prob1)
     
   } else if(self$task %in% c("ordinal", "multi")){
     

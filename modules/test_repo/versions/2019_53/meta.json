@@ -1,0 +1,11 @@
+[
+  {
+    "task": "binary",
+    "backend": "xgboost",
+    "start": "2019-12-31 03:40:49",
+    "n_train": 729,
+    "n_test": 1,
+    "runtime": 0,
+    "end": "2019-12-31 03:40:49"
+  }
+]

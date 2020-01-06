@@ -153,6 +153,7 @@ learner <- R6::R6Class("learner",
     save = function(path = NULL){
       
       if(is.null(path)) path <- "."
+      if(!dir.exists(path)) dir.create(path)
       
       ### model
       self$save_model <- purrr::possibly(self$save_model, NULL)
@@ -162,7 +163,7 @@ learner <- R6::R6Class("learner",
       if(!is.null(self$meta)) save_json_pos(self$meta, "meta", path)
       
       ### params
-      params <- self$params %>% keep(~is.numeric(.x)|is.character(.x))
+      params <- self$params %>% purrr::keep(~is.numeric(.x)|is.character(.x))
       if(!is.null(params)) save_json_pos(params, "params", path)
       
       ### metrics
@@ -232,14 +233,6 @@ fit_cv <- function(params, data, task, backend, path = NULL, dev = F){
     dplyr::summarise_all(mean) %>%
     dplyr::rename_all(~paste0("cv_", .x)) %>%
     dplyr::mutate(folds = list(folds))
-  
-  ### retrain best fit
-  # splits <- split_cv(data, best)
-  ### train custom model object
-  # f <- learner$new(task, backend)
-  # f$feed(params, splits)
-  # f$train()
-  # f$test()
   
   ### determine best model/fold to be extracted
   if(task == "linear") best <- folds %>% dplyr::arrange(rmse) %>% head(1) %>% dplyr::pull(fold)

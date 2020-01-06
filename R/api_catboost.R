@@ -48,7 +48,7 @@ predict_catboost <- function(self, x_test = NULL){
    } else if(self$params$task == "binary"){
       prob <- pred
       pred <- ifelse(prob > .5, 1, 0)
-      tibble(pred, prob0 = 1 - prob, prob1 = prob)
+      tibble(pred, prob)
    } else if(self$task == "multi"){
       probs <- as_tibble(pred) %>% set_names(paste0("prob", 1:ncol(pred)))
       pred <- pred %>% split(1:nrow(.)) %>% map_int(which.max)

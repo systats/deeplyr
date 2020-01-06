@@ -21,13 +21,9 @@ fit_xgboost <- function(self){
    if(self$task == "multi") self$params$objective <- "multi:softprob"
    
    ## set number of classes for object=multi
-   if(is.null(self$params$num_class)){
-     if(self$task == "multi"){
-       if(length(unique(self$data$train$y)) > 2){
-         self$params$num_class <- length(unique(self$data$train$y))
-       }
-     }
-   }
+   if(self$task == "multi") self$params$num_class <- length(unique(self$data$train$y))
+   if(is.null(self$params$nround)) self$params$nround < - 30 
+   if(is.null(self$params$nthread)) self$params$nthread < - 4 
       
    ### set training and evaluation data
    train <- xgboost::xgb.DMatrix(data = as.matrix(self$data$train$x), label = self$data$train$y)
@@ -36,24 +32,28 @@ fit_xgboost <- function(self){
       watchlist <- xgboost::xgb.DMatrix(data = as.matrix(self$data$val$x), label = self$data$val$y) %>% 
          list(train = train, eval = .)
    } else {
-      watchlist <- xgboost::xgb.DMatrix(data = as.matrix(self$data$test$x), label = self$data$test$y) %>% 
-         list(train = train, eval = .)
+      watchlist <- list(train = train)
    }
    
    ### main call
+   mparams <- self$params %>% 
+      imap(~{ if(.y %in% c("nround", "nthread")) return(NULL) else  return(.x) }) %>%
+      compact
+
    model <- xgboost::xgb.train(
-      params = self$params,
+      params = mparams,
       data = train,
-      nround = 50, 
-      nthread = 4, 
+      nround = self$params$nround, 
+      nthread = self$params$nthread, 
       missing = NA, 
-      early_stopping_rounds = 3,
+      # early_stopping_rounds = 3,
       verbose = T,
       watchlist
    )
    
    return(model)
 }
+
 
 #' predict_xgboost
 #' @export
@@ -69,7 +69,7 @@ predict_xgboost <- function(self, x_test = NULL){
    } else if(self$task == "binary"){
       prob <- round(predict(self$model, newdata = x_test), 3)
       pred <- ifelse(prob > .5, 1, 0)
-      tibble(pred, prob0 = 1 - prob, prob1 = prob)
+      tibble(pred, prob)
    } else if(self$task == "multi"){
       prob_col <- length(unique(self$data$train$y))
       probs <- round(predict(self$model, newdata = x_test, reshape = T), 3) %>% as_tibble %>% set_names(paste0("prob", 1:prob_col))

@@ -1,0 +1,13 @@
+[
+  {
+    "accuracy": 0.8857,
+    "precision": 0.7778,
+    "recall": 1,
+    "fbeta_score": 0.875,
+    "ce": 0.1143,
+    "f1": 1,
+    "ll": 0.5217,
+    "logloss": 0.5217,
+    "auc": 0.9779
+  }
+]

@@ -1,0 +1,12 @@
+[
+  {
+    "accuracy": 1,
+    "precision": 1,
+    "recall": 1,
+    "fbeta_score": 1,
+    "ce": 0,
+    "f1": 1,
+    "ll": 0.4845,
+    "logloss": 0.4845
+  }
+]

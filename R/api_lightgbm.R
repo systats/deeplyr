@@ -52,7 +52,7 @@ predict_lightgbm <- function(self, x_test = NULL){
    } else if(self$task == "binary"){
       prob <- round(predict(self$model, as.matrix(x_test)), 3)
       pred <- ifelse(prob > .5, 1, 0)
-      tibble(pred, prob0 = 1 - prob, prob1 = prob)
+      tibble(pred, prob)
    } else if(self$task == "multi"){
       pred <- round(predict(self$model, as.matrix(x_test), reshape = T), 3)
       probs <- as_tibble(pred) %>% set_names(paste0("prob", 1:ncol(pred)))

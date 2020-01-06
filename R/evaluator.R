@@ -64,7 +64,7 @@ eval_binary <- function(preds){
       logloss = Metrics::logLoss,
       auc = Metrics::auc
    ) %>%
-   compute_metrics(preds$target, preds$prob1) 
+   compute_metrics(preds$target, preds$prob) 
    
    c(pred, prob)
 }

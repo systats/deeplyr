@@ -11,7 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 # Packages
 
 ```{r}
-pacman::p_load(tidyverse, purrr, furrr, keras, xgboost, h2o)
+pacman::p_load(tidyverse, purrr, furrr, lubridate, glue)
 devtools::document()
 #devtools::load_all()
 options(scipen = 999)
@@ -24,9 +24,9 @@ options(scipen = 999)
 # CV Test Data
 
 ```{r}
-N <- 1000
+N <- 10000
 df <- tibble(
-  split_cv = sample(1:5, size = N, prob = rep(.2, 5), replace = T),
+  date = seq(as.Date('2017-01-01'), Sys.Date(), by = 1)[1:N],
   x1 = rnorm(N),
   x2 = rnorm(N),
   z = 2*x1 + 3*x2 + rnorm(N),
@@ -35,10 +35,55 @@ df <- tibble(
   y_multi1 = y_multi0 + 1
 ) %>%
   glimpse
-
-df %>%
-  count(split_cv, y)
 ```
+
+
+
+* build new r6 class
+* init directory check versions rebuild
+* predict one month in advance only (beacause of feature constraints)
+
+
+
+```{r}
+t1 <- as_date("2018-01-01")
+t2 <- as_date("2019-01-01")
+
+tcv1 <- tcv$new("test_repo")
+tcv1$feed(list(date=df$date, t1=t1, t2=t2))
+tcv1$plan
+tcv1$data %>% glimpse
+tcv1$plot_plan()
+tcv1$plot_progress()
+
+tcv1$go_forward()
+tcv1$go_back()
+```
+
+
+```{r}
+d1 <- list(
+  x = df[, c("x1", "x2")],
+  y = df$y,
+  date = df$date,
+  t1 = as_date("2018-01-01"),
+  t2 = as_date("2019-01-01")
+)
+
+fit_tcv(list(), d1, task = "binary", backend = "xgboost", path = "test_repo", n = 10)
+
+c <- check_tcv(d1, "test_repo")
+
+c$plot_plan()
+c$plot_progress()
+```
+
+
+
+
+
+
+
 
 
 # Binary

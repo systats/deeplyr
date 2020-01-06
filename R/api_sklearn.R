@@ -59,7 +59,7 @@ predict_sk <- function(self, x_test = NULL){
     pred <- round(self$model$predict_proba(as.matrix(x_test)), 3)
     probs <- as_tibble(pred) %>% set_names(paste0("prob", 0:(ncol(pred)-1)))
     pred <- pred %>% split(1:nrow(.)) %>% map_int(which.max) - 1
-    tibble(pred) %>% bind_cols(probs)
+    tibble(pred, prob = probs$prob1)
     
   } else if(self$task %in% "multi"){
     

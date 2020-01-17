@@ -1,0 +1,110 @@
+---
+title: "Untitled"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+devtools::document()
+pacman::p_load(tidyverse, recipes)
+```
+
+
+
+```{r}
+load("gams_sub.Rdata")
+
+games <- gams_sub %>%
+  filter(league_id == 82) %>%
+  mutate_at(vars(game_id, contains("team_id")), as.integer)
+
+games %>% 
+  count(local_team_id, visitor_team_id, sort = T)
+
+train <- games %>% 
+  filter(year < 2019)
+test <- games %>% 
+  filter(year > 2018)
+```
+
+
+```{r}
+# devtools::install()
+devtools::document()
+
+rec <- recipe(local_team_score + visitor_team_score ~ local_team_id + visitor_team_id + game_id, data = head(games)) %>%
+  update_role(game_id, new_role = "ID")
+
+# f1 <- fit_learner(rec, games, params = NULL, task = "linear", backend = "goalmodel")
+f2 <- learner$new(params = list(type = "negbin"), task = "linear", backend = "goalmodel")
+f2$fit(rec, train)
+
+preds <- f2$predict_feature(test[1,], "w200")
+preds
+```
+
+
+```{r}
+#' slide_window 
+#' @export
+slide_window <- function(
+    test, 
+    train, 
+    primitive = NULL,
+    window = 60, 
+    suffix = ""
+){
+  
+  test %>%
+    split(1:nrow(.)) %>%
+    furrr::future_map_dfr(~{
+      
+      ### Define training time ranges
+      cuttrain <- .x$date[1] - as.difftime(window + 1, units = "days")
+      cuttest <- .x$date[1] - as.difftime(1, units = "days")
+      
+      ### Filter data by window and league
+      focus <- train[
+        train$date > cuttrain & 
+        train$date < cuttest &
+        (train$local_team_id %in% c(test$local_team_id, test$visitor_team_id) | 
+        train$visitor_team_id %in% c(test$visitor_team_id, test$local_team_id)), ]
+
+      if(nrow(focus) < 2) return(NULL)
+      
+      return(primitive(.x, train, suffix))
+      
+    }, .progress = T)
+}
+```
+
+
+```{r}
+devtools::document()
+fun <- function(test, train, suffix){
+  rec <- recipe(local_team_score + visitor_team_score ~ local_team_id + visitor_team_id + game_id, data = head(games)) %>%
+  update_role(game_id, new_role = "ID")
+
+  f2 <- learner$new(params = list(type = "negbin"), task = "linear", backend = "goalmodel")
+  f2$fit(rec, train)
+  f2$predict_feature(test, "w200")
+}
+
+fea <- slide_window(test[1:100,], train, fun)
+fea$visitor_teamscore_expg_negbin_w200 %>% hist
+```
+
+
+```{r}
+fea$visitor_teamscore_expg_negbin_w200 %>% hist
+```
+
+
+
+
+
+

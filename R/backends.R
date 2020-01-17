@@ -96,6 +96,16 @@ backend <- R6::R6Class("backend",
         private$model_load <- load_rpart
         
       }
+      
+      ### goalmodel
+      if(self$meta$backend == "goalmodel"){
+        
+        private$model_fit <- fit_goalmodel
+        private$model_predict <- predict_goalmodel
+        # private$model_save <- save_goalmodel
+        # private$model_load <- load_goalmodel
+        
+      }
     }
   )
 )

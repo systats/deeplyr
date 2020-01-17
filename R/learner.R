@@ -76,6 +76,23 @@ learner <- R6::R6Class(
       }
     },
     
+    predict_feature = function(new_data, suffix){
+      
+      yname <- self$process$ask_y() %>% str_remove("^local_|^visitor_") %>% str_remove_all("_")
+      
+      private$model_predict(self, new_data) %>%
+        select(-contains("team_id")) %>%
+        ### apply prefix other than team ids
+        dplyr::rename_all(~ paste0(yname, "_", .x)) %>%
+        ### reoreder local|visitor label
+        dplyr::rename_all(suf_to_pref) %>%
+        ### apply suffix
+        dplyr::rename_at(-1, ~ paste0(.x, "_", self$params$type, "_", suffix)) %>%
+        ### combine all data
+        cbind(self$process$stream_all(new_data), .)
+
+    },
+    
     # test = function(){
     #   # if(self$meta$task == "linear"){
     #   #   self$metrics <- self$preds %>% 

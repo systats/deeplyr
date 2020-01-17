@@ -38,8 +38,13 @@ library(furrr)
 options(future.globals.maxSize = 850 * 2024^2)
 plan(multicore)
 
+
+t1 <- Sys.time()
 cv_models <- rsample::vfold_cv(train, v = 10) %>%
   future_fit_cv(rec, NULL, "linear", "xgboost")
+
+diff <- Sys.time() - t1
+diff
 ```
 
 
@@ -52,11 +57,14 @@ library(furrr)
 options(future.globals.maxSize = 850 * 2024^2)
 plan(multicore)
 
+t1 <- Sys.time()
 pred <- 1:10 %>%
   future_map(~{
     rsample::vfold_cv(train, v = 10) %>%
       fit_cv(rec, NULL, "linear", "xgboost")
   }, .progress = T)
+diff <- Sys.time() - t1
+diff
 ```
 
 ```{r}

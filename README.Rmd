@@ -15,51 +15,10 @@ cat(
 )
 ```
 
-`deeplyr` provides a standard model interface for some machine learning libraries. Internally the package is managed by R6 classes, allowing for cross-validation or genetic hyper parameter tuning. Every model run can be saved including meta, params, metrics, model, and preds either as .rds or .json.
+`deeplyr` provides a standard model interface for some machine learning libraries. Internally the package is managed by R6 classes and hardhat allowing for cross-validation or genetic hyper parameter tuning. Every model run can be saved including meta, params, metrics, process, model, and preds either as .rds or .json.
 
-Have already full support (fit, predict, save)
+Have already full support (fit, predict, save, load)
 
 * `keras`
 * `h2o`
 * `xgboost`
-
-For example
-
-```{r, eval = F}
-f1 <- fit_learner(params, data, task = "binary", backend = "xgboost")
-f1$save(".. your path ...")
-```
-
-
-What about cross validation?
-
-```{r, eval = F}
-f1 <- fit_cv(params, data, task = "binary", backend = "xgboost")
-f1$save(".. your path ...")
-```
-
-
-Other libraries that are yet not fully supporteds
-
-* `ranger`
-* `randomForest`
-* `sklearn`
-
-
-Most common prediction tasks are
-
-* **linear**
-* **binary**
-* **multi**
-* *poisson*
-
-
-
-```{r}
-tinytest::test_all()
-```
-
-```{r}
-devtools::session_info()
-```
-

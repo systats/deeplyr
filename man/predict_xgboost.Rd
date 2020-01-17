@@ -4,7 +4,7 @@
 \alias{predict_xgboost}
 \title{predict_xgboost}
 \usage{
-predict_xgboost(self, x_test = NULL)
+predict_xgboost(self, new_data)
 }
 \description{
 predict_xgboost

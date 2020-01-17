@@ -4,7 +4,7 @@
 \alias{predict_rpart}
 \title{predict_rpart}
 \usage{
-predict_rpart(self, x_test = NULL)
+predict_rpart(self, new_data)
 }
 \description{
 predict_rpart

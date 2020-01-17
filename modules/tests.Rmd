@@ -1,0 +1,298 @@
+---
+title: "tests"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+## Packages
+
+```{r, results="hide"}
+devtools::document()
+# devtools::install()
+pacman::p_load(tidyverse, tidymodels, recipes, h2o, furrr, hardhat)
+
+h2o.init()
+h2o.no_progress()
+plan(multiprocess)
+```
+
+
+
+
+
+## Lerner
+
+```{r}
+test_data<- function(list, recs){
+  list %>%
+    tidyr::gather(task, value, -backend) %>%
+    dplyr::filter(value) %>%
+    dplyr::select(-value) %>%
+    dplyr::left_join(recs)
+}
+
+map_fit <- function(list, data){
+  
+  list$model <- list %>% 
+    split(1:nrow(.)) %>% 
+    purrr::map(~{
+      m <- NULL
+      m <- learner$new(list(), task = .x$task, backend = .x$backend)
+      m$fit(.x$rec[[1]], data)
+      m
+    })
+  
+  list %>% 
+    dplyr::mutate(
+      meta = purrr::map(model, "meta") %>% purrr::map(as_tibble),
+      params = purrr::map(model, "params") %>% purrr::map(as_tibble)
+    )
+}
+
+map_predict <- function(list, new_data){
+
+  list$model %>% purrr::walk(~ .x$predict(new_data))
+  
+  list$preds <- list$model %>% 
+    purrr::map("preds") %>% 
+    purrr::map(as_tibble)
+  
+  list$metrics <- list$model %>% 
+    purrr::map("metrics") %>% 
+    purrr::map(as_tibble)
+    
+  list
+}
+```
+
+
+### Data
+
+```{r}
+mtcars <- mtcars %>% 
+  mutate(
+    id = 1:n(),
+    amnum = am,
+    am = as.factor(am),
+    cyl =  as.factor(as.numeric(as.factor(cyl))),
+    cyl0num = as.numeric(as.factor(cyl))-1, 
+    cyl0 = as.factor(cyl0num)
+  )
+
+### PS
+rec_linear <- recipes::recipe(hp ~ ., mtcars) %>%
+  update_role(id, new_role = "ID")
+
+### automatic?
+rec_binary<- recipes::recipe(am ~ ., mtcars) %>%
+  update_role(id, amnum, new_role = "ID") 
+
+rec_binary_num <- recipes::recipe(amnum ~ ., mtcars) %>%
+  update_role(id, am, new_role = "ID") 
+
+### number of cylinders
+rec_multi <- recipes::recipe(cyl ~ ., mtcars) %>%
+  update_role(id, cyl0, cyl0num, new_role = "ID") 
+
+### number of cylinders
+rec_multi0 <- recipes::recipe(cyl0 ~ ., mtcars) %>%
+  update_role(id, cyl, cyl0num, new_role = "ID")
+
+rec_multi0_num <- recipes::recipe(cyl0num ~ ., mtcars) %>%
+  update_role(id, cyl, cyl0, new_role = "ID")
+
+recs <- tibble(
+  task = c("linear", "binary", "multi"),
+  rec = list(rec_linear, rec_binary, rec_multi)
+)
+
+recs0 <- tibble(
+  task = c("linear", "binary", "multi"),
+  rec = list(rec_linear, rec_binary, rec_multi0)
+)
+
+recs0_num <- tibble(
+  task = c("linear", "binary", "multi"),
+  rec = list(rec_linear, rec_binary_num, rec_multi0_num)
+)
+```
+
+
+
+```{r}
+pacman::p_load(tidyverse, purrr, hardhat, AmesHousing, rsample, parsnip, recipes)
+
+
+d <- AmesHousing::ames_raw %>%
+  janitor::clean_names() %>%
+  mutate(sale_high = ifelse(sale_price > median(sale_price), 1, 0) %>% as.factor) %>%
+  mutate(sale_type = ntile(sale_price, 3) %>% as.factor) %>%
+  glimpse
+
+sp <- rsample::initial_split(d)
+
+train <- training(sp)
+test <- testing(sp)
+
+rec_linear <- recipes::recipe(sale_price ~ neighborhood + yr_sold + lot_area, data = train)
+rec_binary <- recipes::recipe(sale_high ~ neighborhood + yr_sold + lot_area, data = train)
+rec_multi <- recipes::recipe(sale_type ~ neighborhood + yr_sold + lot_area, data = train)
+
+recs <- tibble(
+  task = c("linear", "binary", "multi"),
+  rec = list(rec_linear, rec_binary, rec_multi)
+)
+```
+
+
+## Keras
+
+```{r}
+devtools::document()
+
+keras_models <- dplyr::tibble(backend = "keras", linear = T, binary = T, multi = T)
+
+k <- keras_models %>%
+  test_data(recs) %>%
+  map_fit(train) %>%
+  map_predict(test)
+
+k$preds
+k$metrics
+```
+
+
+
+## xgboost
+
+```{r}
+devtools::document()
+xgboost_models <- dplyr::tibble(backend = "xgboost", linear = T, binary = T, multi = T)
+
+k2 <- xgboost_models %>%
+  test_data(recs) %>%
+  map_fit(d) %>%
+  map_predict(d) 
+
+k2$metrics
+```
+
+
+
+## rpart 
+
+```{r}
+devtools::document()
+rpart_models <- dplyr::tibble(backend = "rpart", linear = T, binary = T, multi = T)
+
+k3 <- rpart_models %>%
+  test_data(recs) %>%
+  map_fit(d) %>%
+  map_predict(d)
+
+k3$metrics
+```
+
+
+## h2o
+
+```{r}
+devtools::document()
+
+h2o_models <- bind_rows(
+    dplyr::tibble(backend = "h2o_glm", linear = T, binary = T, multi = T),
+    dplyr::tibble(backend = "h2o_nb", linear = F, binary = T, multi = T),
+    dplyr::tibble(backend = "h2o_rf", linear = T, binary = T, multi = T),
+    dplyr::tibble(backend = "h2o_xgb", linear = T, binary = T, multi = T),
+    dplyr::tibble(backend = "h2o_svm", linear = F, binary = T, multi = F),
+    dplyr::tibble(backend = "h2o_dnn", linear = T, binary = T, multi = T)
+  )
+
+k4 <- h2o_models %>%
+  test_data(recs) %>%
+  map_fit(d) %>%
+  map_predict(d)
+
+k4$metrics
+```
+
+
+```{r}
+bind_rows(
+ k2, k3, k4
+) %>%
+  select(backend, task, metrics) %>%
+  tidyr::unnest() %>%
+  filter(.metric %in% c("rmse", "accuracy")) %>% #mn_log_loss
+  ggplot(aes(backend, .estimate, color = .metric)) +
+  geom_point() +
+  coord_flip() +
+  facet_wrap(~task, scales = "free_x")
+```
+
+
+```{r}
+devtools::document()
+sk_models <- dplyr::tibble(backend = "sk_glm", linear = T, binary = T, multi = T)
+
+k6 <- sk_models %>%
+  test_data(recs) %>%
+  map_fit(d) %>%
+  map_predict(d)
+
+k2$metrics
+```
+
+
+
+## Bridge
+
+```{r}
+rec <- recipes::recipe(drat ~ ., mtcars) %>%
+  update_role(hp, new_role = "ID")
+
+b <- bridge$new()
+### Inputs
+b$bake(mtcars[,2:4], mtcars$drat)
+b$bake(rec, mtcars)
+
+### Outputs
+b$juice_x()
+b$juice_x_matrix()
+
+b$juice_y()
+b$juice_y_matrix()
+b$juice_y_tibble()
+b$juice()
+  
+b$data$blueprint
+
+
+b$stream(mtcars)
+b$stream_all(mtcars)
+
+b$ask_x()
+b$ask_y()
+b$formula
+```
+
+
+
+```{r, eval = F}
+rpart_results$preds
+rpart_results$meta %>% map_dfr(bind_cols)
+rpart_results %>% glimpse
+
+devtools::document()
+m <- learner$new(list(), task = "multi", backend = "rpart")
+m$fit(recs$rec[[3]], mtcars)
+m$predict(mtcars)
+m$test()
+
+m$metrics
+```

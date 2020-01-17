@@ -1,6 +1,7 @@
 [
   {
-    "epochs": 1,
+    "seq_len": 100,
+    "input_dim": 1000,
     "output_dim": 1,
     "output_fun": "sigmoid",
     "loss": "binary_crossentropy",

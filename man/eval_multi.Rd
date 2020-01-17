@@ -4,7 +4,7 @@
 \alias{eval_multi}
 \title{eval_multi}
 \usage{
-eval_multi(preds)
+eval_multi(preds, y)
 }
 \description{
 eval_multi

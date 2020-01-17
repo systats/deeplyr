@@ -1,163 +1,99 @@
 #' learner
 #' @export
-learner <- R6::R6Class("learner",
-                       
-  #inherit = backends, 
-  private = list(
-    init_backend = function(){
-      
-      if(self$backend == "keras"){
-        self$fit <- fit_keras
-        self$predict <- predict_keras
-        #self$imp <- feature_imp_keras
-        self$save_model <- save_keras
-      }
-      if(self$backend == "xgboost"){
-        self$fit <- fit_xgboost
-        self$predict <- predict_xgboost
-        self$imp <- feature_imp_xgboost
-        self$save_model <- save_xgboost
-      }
-      if(self$backend == "lightgbm"){
-        self$fit <- fit_lightgbm
-        self$predict <- predict_lightgbm
-      }
-      if(self$backend == "catboost"){
-        self$fit <- fit_catboost
-        self$predict <- predict_catboost
-        self$imp <- h2o_feature_imp
-      }
-      # if(self$backend == "rgf"){
-      #   self$fit <- fit_rgf
-      #   self$predict <- predict_rgf
-      # }
-      if(str_detect(self$backend, "h2o_")){
-        
-        self$predict <- predict_h2o
-        self$imp <- feature_imp_h2o
-        self$save_model <- save_h2o
-        
-        if(self$backend == "h2o_glm") self$fit <- fit_h2o_glm
-        if(self$backend == "h2o_rf") self$fit <- fit_h2o_rf
-        if(self$backend == "h2o_nb")  self$fit <- fit_h2o_nb
-        if(self$backend == "h2o_svm") self$fit <- fit_h2o_svm
-        if(self$backend == "h2o_gbm") self$fit <- fit_h2o_gbm
-        if(self$backend == "h2o_xgboost") self$fit <- fit_h2o_xgboost
-        if(self$backend == "h2o_dnn") self$fit <- fit_h2o_dnn
-        if(self$backend == "h2o_cox") self$fit <- fit_h2o_cox
-      }
-      if(str_detect(self$backend, "sk_")){
-        
-        self$predict <- predict_sk
-        
-        if(self$backend == "sk_glm") self$fit <- fit_sk_glm
-        if(self$backend == "sk_tree") self$fit <- fit_sk_tree
-      }
-      if(self$backend == "ranger"){
-        self$fit <- fit_ranger
-        self$predict <- predict_ranger
-      }
-      if(self$backend == "randomForest"){
-        self$fit <- fit_randomForest
-        self$predict <- predict_randomForest
-      }
-      if(self$backend == "rpart"){
-        self$fit <- fit_rpart
-        self$predict <- predict_rpart
-      }
-    }
-  ),
+learner <- R6::R6Class(
+  
+  inherit = backend,
+  
   public = list(
-    
-    ### initalize variables
-    ### methods 
-    fit = NULL,
-    predict = NULL,
-    imp = NULL,
-    save_model = NULL,
-    ### outputs
+    ### data slots
     meta = NULL,
-    task = NULL,
-    backend = NULL,
-    data = NULL,
     params = NULL,
+    process = NULL,
     model = NULL,
-    preds = NULL,
     imps = NULL,
-    metrics = NULL,
+    preds = NULL,
+    metrics = NULL, 
     
-    ### init fun
-    initialize = function(task, backend) {
-      
-      self$meta$task <- task
-      self$meta$backend <- backend
-      self$meta$start <- Sys.time()
-      
-      self$task <- task
-      self$backend <- backend
+    ### extra
+    tokenizer = NULL, 
     
-    },
-    feed = function(params, data){
-      self$params <- c(self$params, params)
-      self$data <- data
+    ### main functions
+    initialize = function(params, task = NULL, backend = NULL, meta = NULL){
       
-      self$meta$n_train <- nrow(data[[1]]$x)
-      self$meta$n_test <- nrow(data[[2]]$x)
-    },
-    train = function(){
-      
-      private$init_backend()
-    
-      tictoc::tic()
-      
-      self$model <- self$fit(self)
-      
-      time <- tictoc::toc(log = T)
-      
-      suppressMessages(
-        self$meta$runtime <- as.numeric(time$toc - time$tic) %>% round(1)
-      )
-      
-    },
-    test = function(dev = F){
-      
-      ### perform main prediction
-      preds <- self$predict(self)
-      
-      ### dev gate
-      if(dev) return(preds)
-      
-      ### bind target
-      if(is.null(ncol(self$data$test$y))) preds <- preds %>% mutate(target = self$data$test$target)
-      
-      ### bind meta
-      if(!is.null(self$data$test$meta)){
-        self$preds <- cbind(preds, self$data$test$meta)
+      if(is.null(task)){
+        
+        self$meta <- load_json(params, "meta")
+        self$params <- load_json(params, "params")
+        self$process <- bridge$new(load_rds(params, "process"))
+        
+        private$model_backend()
+        
+        self$model <- private$model_load(params)
+        
+        if(file.exists(glue::glue("{params}/tok"))) self$tokenizer <- load_tokenizer(params)
+        
       } else {
-        self$preds <- preds
+        
+        self$process <- bridge$new()
+        self$params <- params
+        
+        if(!is.null(meta)){
+          self$meta <- meta
+        } else {
+          self$meta$task <- task
+          self$meta$backend <- backend
+          
+          private$model_backend()
+        }
       }
+    },
+
+    
+    fit = function(x, y){
       
-      ### compute eval metrics 
-      self$metrics <- eval_model(self)
+      ### freeze training data + pre-processing steps
+      self$process$bake(x, y)
+
+      start <- Sys.time()
+
+      self$model <- private$model_fit(self)
+
+      self$meta$runtime <- as.numeric(Sys.time() - start)
+
+      ### if avaible: feature importane
+      if(!is.null(private$imp_model)) self$imps <- private$model_imp(self)
+    },
+    
+    predict = function(new_data, dev = F){
       
-      ### compute feature importance
-      if(!is.null(self$imp)){
-        self$imps <- self$imp(self)
+      self$preds <- private$model_predict(self, new_data) %>% 
+        dplyr::bind_cols(self$process$stream_all(new_data))
+      
+      if(dev) return(self$preds)
+      
+      if(self$process$ask_y() %in% colnames(as_tibble(new_data))){
+        self$metrics <- model_eval(self, self$process$ask_y())
       }
-      
-      self$meta$end <- Sys.time()
     },
-    add_metrics = function(cv){
-      self$metrics <- cbind(self$metrics, cv)
-    },
+    
+    # test = function(){
+    #   # if(self$meta$task == "linear"){
+    #   #   self$metrics <- self$preds %>% 
+    #   #     yardstick::metrics(truth = .data[[actual]], estimate =  pred)
+    #   # } else {
+    #   #   self$metrics <- self$preds %>% 
+    #   #     yardstick::metrics(truth = .data[[actual]], estimate = pred, contains("prob"))
+    #   #} 
+    # },
+    
     save = function(path = NULL){
       
       if(is.null(path)) path <- "."
       if(!dir.exists(path)) dir.create(path)
       
       ### model
-      self$save_model <- purrr::possibly(self$save_model, NULL)
-      self$save_model(self$model, "model", path)
+      private$model_save <- purrr::possibly(private$model_save, NULL)
+      private$model_save(self$model, "model", path)
       
       ### meta
       if(!is.null(self$meta)) save_json_pos(self$meta, "meta", path)
@@ -165,7 +101,10 @@ learner <- R6::R6Class("learner",
       ### params
       params <- self$params %>% purrr::keep(~is.numeric(.x)|is.character(.x))
       if(!is.null(params)) save_json_pos(params, "params", path)
-      
+
+      ### recipe
+      if(!is.null(self$process$data)) save_rds_pos(self$process$data, "process", path)
+            
       ### metrics
       if(!is.null(self$metrics)) save_json_pos(self$metrics, "metrics", path)
       
@@ -178,69 +117,73 @@ learner <- R6::R6Class("learner",
   )
 )
 
-#' fit_learner
-#' 
-#' @export
-fit_learner <- function(params, data, task, backend, path = NULL, dev = F){
-  f <- learner$new(task, backend)
-  f$feed(params, data)
-  f$train()
-  f$test()
-  if(!is.null(path)) f$save(path)
-  return(f)
-}
 
-#' split_cv
-#' 
+#' fit_learner
 #' @export
-split_cv <- function(data, fold){
-  df <- list()
-  ### training split
-  df$train$x <- data[-fold] %>% map("x") %>% rlist::list.rbind()
-  df$train$y <- data[-fold] %>% map("y") %>% unlist
-  df$train$target <- data[-fold] %>% map("target") %>% unlist
-  df$train$meta <- data[-fold] %>% map("meta") %>% rlist::list.rbind()
-  
-  ### testing split
-  df$test$x <- data[fold] %>% map("x") %>% rlist::list.rbind()
-  df$test$y <- data[fold] %>% map("y") %>% unlist
-  df$test$target <- data[fold] %>% map("target") %>% unlist
-  df$test$meta <- data[fold] %>% map("meta") %>% rlist::list.rbind()
-  
-  return(df)
+fit_learner <- function(x, y, params, task, backend){
+  g <- learner$new(params, task, backend)
+  g$fit(x, y)
+  return(g)
 }
 
 #' fit_cv
-#' 
 #' @export
-fit_cv <- function(params, data, task, backend, path = NULL, dev = F){
-  
-  ### calculate a few times the same model with rotating data
-  models <- 1:length(data) %>%
-    purrr::map(~{
-      df <- split_cv(data, .x)
-      fit_learner(params, data = df, task, backend)
+fit_cv <- function(rsample, rec, params, task, backend){
+  rsample %>%
+    dplyr::mutate(models = map(splits, ~{
+      g <- deeplyr::fit_learner(
+        rec, dplyr::bind_rows(rsample::analysis(.x)), 
+        params, task, backend
+      )
+      g$predict(new_data = dplyr::bind_rows(rsample::assessment(.x)))
+      return(g)
     })
-  
-  ### extract metrics form cv models
-  folds <- models %>% 
-    purrr::map_dfr("metrics") %>% 
-    dplyr::mutate(fold = 1:n())
-  
-  ### generate avergae fold stats
-  cv <- folds %>%
-    dplyr::select(-fold) %>%
-    dplyr::summarise_all(mean) %>%
-    dplyr::rename_all(~paste0("cv_", .x)) %>%
-    dplyr::mutate(folds = list(folds))
-  
-  ### determine best model/fold to be extracted
-  if(task == "linear") best <- folds %>% dplyr::arrange(rmse) %>% head(1) %>% dplyr::pull(fold)
-  if(task %in% c("binary", "multi")) best <- folds %>% dplyr::arrange(dplyr::desc(accuracy)) %>% head(1) %>% dplyr::pull(fold)
-  
-  f <- models[[best]]
-  f$add_metrics(cv)
-  if(!is.null(path)) f$save(path)
-  
-  return(f)
+    ) %>% #furrr::future_  #, .progress = F
+    dplyr::mutate(
+      preds = purrr::map(models, ~.x$preds),
+      metrics = purrr::map(models, ~.x$metrics)
+    )
 }
+
+
+
+#' future_fit_cv
+#' @export
+future_fit_cv <- function(rsample, rec, params, task, backend){
+  rsample %>%
+    dplyr::mutate(models = furrr::future_map(splits, ~{
+      g <- deeplyr::fit_learner(
+        x = rec, y = dplyr::bind_rows(rsample::analysis(.x)), 
+        params, task, backend
+      )
+      g$predict(new_data = dplyr::bind_rows(rsample::assessment(.x)))
+      return(g)
+    }, .progress = T)
+    ) %>% #furrr::future_  #, .progress = F
+    dplyr::mutate(
+      preds = purrr::map(models, ~.x$preds),
+      metrics = purrr::map(models, ~.x$metrics)
+    )
+}
+
+#' fit_tcv
+#' @export
+fit_tcv <- function(rsample, rec, params, task, backend){
+  rsample %>%
+    dplyr::mutate(models = map(splits, ~{
+      g <- deeplyr::fit_learner(
+        rec, dplyr::bind_rows(rsample::analysis(.x)$data), 
+        params, task, backend
+      )
+      g$predict(new_data = dplyr::bind_rows(rsample::assessment(.x)$data))
+      return(g)
+    })
+    ) %>% #furrr::future_  #, .progress = F
+    dplyr::mutate(
+      preds = purrr::map(models, ~.x$preds),
+      metrics = purrr::map(models, ~.x$metrics)
+    )
+}
+
+
+

@@ -1,0 +1,212 @@
+---
+title: "Ameshousing"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+```{r}
+pacman::p_load(tidyverse, purrr, hardhat, AmesHousing, rsample, parsnip, recipes, deeplyr)
+# devtools::document()
+# devtools::install()
+
+d <- AmesHousing::ames_raw %>%
+  janitor::clean_names() 
+
+d <- 1:10 %>%
+  map_dfr(~d) %>%
+  glimpse
+
+sp <- rsample::initial_split(d)
+
+train <- training(sp)
+test <- testing(sp)
+
+
+#hist(train$sale_price)
+rec <- recipes::recipe(sale_price ~ neighborhood + yr_sold + lot_area, data = head(train, 2000))
+```
+
+
+```{r}
+library(furrr)
+
+options(future.globals.maxSize = 850 * 2024^2)
+plan(multicore)
+
+cv_models <- rsample::vfold_cv(train, v = 10) %>%
+  future_fit_cv(rec, NULL, "linear", "xgboost")
+```
+
+
+
+
+
+```{r}
+library(furrr)
+
+options(future.globals.maxSize = 850 * 2024^2)
+plan(multicore)
+
+pred <- 1:10 %>%
+  future_map(~{
+    rsample::vfold_cv(train, v = 10) %>%
+      fit_cv(rec, NULL, "linear", "xgboost")
+  }, .progress = T)
+```
+
+```{r}
+devtools::document()
+library(magrittr)
+g <- fit_learner(rec, train, params = NULL, task = "linear", backend = "rpart")
+
+g$predict(new_data = test) # %>% select(-sale_price)
+g$preds
+g$metrics
+```
+
+
+
+### TEXT
+
+```{r}
+devtools::document()
+examples <- tidytext::sentiments$word %>%
+  split(1:length(.) %/% 100) %>%
+  map_chr(paste0, collapse = " ") %>%
+  tibble(text = .) %>%
+  mutate(party = as.factor(sample(0:1, size = n(), replace = T, prob = rep(.5, 2))))
+
+glimpse(examples)
+
+
+tok <- keras::text_tokenizer(
+  num_words = 1000,
+  lower = T,
+  char_level = F
+)
+
+keras::fit_text_tokenizer(tok, examples$text)
+
+x <- deeplyr::tokenize_text(examples$text, tok = tok, 100)
+
+
+# library(magrittr)
+# p <- list(model = list(keras_cnn_lstm), seq_len = 100, input_dim = 1000)
+# f1 <- fit_learner(x = x, y = examples %>% select(party), params = p, task = "binary", backend = "keras")
+# 
+# f1$predict(new_data = cbind(as_tibble(x), examples %>% select(party)))
+# # f1$preds
+# # f1$metrics
+# # f1$params
+# f1$save("test")
+# # save_rds(f1$process$data, "test", "process")
+# # f1 %>% model_eval(., "party")
+
+
+library(magrittr)
+p <- list(model = list(keras_cnn_lstm), seq_len = 100, input_dim = 1000, epochs = 2)
+d <- cbind(examples %>% select(party), as_tibble(x))
+rec_text <- recipe(party ~ ., data = d)
+cv_models <- rsample::vfold_cv(d, v = 5) %>%
+  fit_cv(rec_text, p, "binary", "keras")
+```
+
+
+
+```{r}
+devtools::document()
+# devtools::install()
+n1 <- learner$new("test")
+
+n1$predict(x, dev = T)
+```
+
+
+## CV
+
+```{r}
+# cvprepper <- function(split_obj, recipe, ...){
+#    prep(recipe, training = dplyr::bind_rows(rsample::analysis(split_obj)), fresh = TRUE, ...)
+# }
+# 
+# tcvprepper <- function(split_obj, recipe, ...){
+#    prep(recipe, training = dplyr::bind_rows(rsample::analysis(split_obj)$data), fresh = TRUE, ...)
+# }
+
+h2o::h2o.init()
+
+library(furrr)
+plan(multiprocess)
+
+fit_fun <- function(split){
+  train <- dplyr::bind_rows(rsample::analysis(split))
+  assess <- dplyr::bind_rows(rsample::assessment(split))
+  g <- deeplyr::fit_learner(rec, train, params = NULL, task = "linear", backend = "h2o_rf")
+  g$predict(new_data = assess)
+  g
+}
+
+cv_models <- rsample::vfold_cv(train, v = 5) %>%
+  mutate(model = map(splits, fit_fun)) %>% #furrr::future_  #, .progress = F
+  mutate(
+    preds = map(model, ~.x$preds),
+    metrics = map(model, ~.x$metrics)
+  )
+```
+
+```{r}
+fit_cv <- function(rsample, rec, params, task, backend){
+  rsample %>%
+    dplyr::mutate(model = map(splits, ~{
+        g <- deeplyr::fit_learner(
+          rec, dplyr::bind_rows(rsample::analysis(.x)), 
+          params, task, backend
+        )
+        g$predict(new_data = dplyr::bind_rows(rsample::assessment(.x)))
+        return(g)
+      })
+    ) %>% #furrr::future_  #, .progress = F
+    dplyr::mutate(
+      preds = purrr::map(model, ~.x$preds),
+      metrics = purrr::map(model, ~.x$metrics)
+    )
+}
+
+cv_models <- rsample::vfold_cv(train, v = 5) %>%
+  fit_cv(rec, NULL, "linear", "rpart")
+```
+
+
+
+
+
+
+
+```{r}
+cv_all_models <- c("rpart", "xgboost", "h2o_glm", "h2o_rf", "h2o_dnn", "h2o_gbm", "h2o_xgb") %>%
+  map_dfr(~{
+    rsample::vfold_cv(train, v = 5) %>%
+      fit_cv(rec, NULL, "linear", .x) %>%
+      select(id, metrics) %>%
+      mutate(backend = .x)
+  })
+
+options(scipen = 999)
+
+cv_all_models %>%
+  unnest %>%
+  mutate(index = str_extract(id, "\\d$") %>% as.numeric) %>%
+  ggplot(aes(index, mae, colour = backend)) +
+  geom_line()
+  glimpse
+```
+
+
+
+
+

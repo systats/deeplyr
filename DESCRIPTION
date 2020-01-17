@@ -1,31 +1,32 @@
 Package: deeplyr
-Title: What the Package Does (One Line, Title Case)
-Version: 0.0.0.9000
+Title: Pretrained keras models for predicting ideology from tweets. 
+Version: 0.0.1
 Authors@R: 
-    person(given = "First",
-           family = "Last",
+    person(given = "Simon",
+           family = "Roth",
            role = c("aut", "cre"),
-           email = "first.last@example.com",
+           email = "s.roth@uni-konstanz.de",
            comment = c(ORCID = "YOUR-ORCID-ID"))
-Description: What the package does (one paragraph).
-License: What license it uses
+Description: "Automated text predictions ready to use."
+License: MIT
 Encoding: UTF-8
 LazyData: true
 RoxygenNote: 6.1.1
 Imports: 
-    tidyverse,
-    purrr, 
-    furrr, 
-    glue, 
-    dummies,
+    dplyr,
+    tidyr,
+    purrr,
+    furrr,
+    glue,
     Metrics,
     reticulate,
     tictoc,
-    GA,
-    ggforce,
-    ggridges
+    hardhat,
+    recipes
 Suggests: 
     keras, 
     xgboost,
+    h2o,
     ranger,
-    devtools, tinytest
+    devtools,
+    magrittr

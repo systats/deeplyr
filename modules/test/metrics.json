@@ -1,84 +1,13 @@
 [
   {
-    "accuracy": 0.7897,
-    "precision": 0.8235,
-    "recall": 0.7292,
-    "fbeta_score": 0.7735,
-    "ce": 0.2103,
+    "accuracy": 0.8382,
+    "precision": 0.7755,
+    "recall": 1,
+    "fbeta_score": 0.8736,
+    "ce": 0.1618,
     "f1": 1,
-    "ll": 0.5982,
-    "logloss": 0.5982,
-    "auc": 0.8715,
-    "cv_accuracy": 0.5868,
-    "cv_precision": 0.562,
-    "cv_recall": 0.3803,
-    "cv_fbeta_score": 0.426,
-    "cv_ce": 0.4132,
-    "cv_f1": 1,
-    "cv_ll": 0.6763,
-    "cv_logloss": 0.6763,
-    "cv_auc": 0.6408,
-    "folds": [
-      {
-        "accuracy": 0.586,
-        "precision": 0.6286,
-        "recall": 0.2558,
-        "fbeta_score": 0.3636,
-        "ce": 0.414,
-        "f1": 1,
-        "ll": 0.7441,
-        "logloss": 0.7441,
-        "auc": 0.4525,
-        "fold": 1
-      },
-      {
-        "accuracy": 0.7897,
-        "precision": 0.8235,
-        "recall": 0.7292,
-        "fbeta_score": 0.7735,
-        "ce": 0.2103,
-        "f1": 1,
-        "ll": 0.5982,
-        "logloss": 0.5982,
-        "auc": 0.8715,
-        "fold": 2
-      },
-      {
-        "accuracy": 0.3551,
-        "precision": 0.2836,
-        "recall": 0.1743,
-        "fbeta_score": 0.2159,
-        "ce": 0.6449,
-        "f1": 1,
-        "ll": 0.8108,
-        "logloss": 0.8108,
-        "auc": 0.2748,
-        "fold": 3
-      },
-      {
-        "accuracy": 0.7577,
-        "precision": 0.7412,
-        "recall": 0.7159,
-        "fbeta_score": 0.7283,
-        "ce": 0.2423,
-        "f1": 1,
-        "ll": 0.5684,
-        "logloss": 0.5684,
-        "auc": 0.8313,
-        "fold": 4
-      },
-      {
-        "accuracy": 0.4455,
-        "precision": 0.3333,
-        "recall": 0.0263,
-        "fbeta_score": 0.0488,
-        "ce": 0.5545,
-        "f1": 1,
-        "ll": 0.66,
-        "logloss": 0.66,
-        "auc": 0.7741,
-        "fold": 5
-      }
-    ]
+    "ll": 0.535,
+    "logloss": 0.535,
+    "auc": 0.9404
   }
 ]

@@ -2,10 +2,6 @@
   {
     "task": "binary",
     "backend": "keras",
-    "start": "2019-12-30 17:29:12",
-    "n_train": 805,
-    "n_test": 195,
-    "runtime": 0.6,
-    "end": "2019-12-30 17:29:13"
+    "runtime": 6.4435
   }
 ]

@@ -4,7 +4,7 @@
 \alias{eval_linear}
 \title{eval_linear}
 \usage{
-eval_linear(preds)
+eval_linear(preds, y)
 }
 \description{
 eval_linear

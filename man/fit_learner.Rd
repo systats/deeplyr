@@ -4,7 +4,7 @@
 \alias{fit_learner}
 \title{fit_learner}
 \usage{
-fit_learner(params, data, task, backend, path = NULL, dev = F)
+fit_learner(x, y, params, task, backend)
 }
 \description{
 fit_learner

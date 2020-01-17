@@ -88,9 +88,20 @@ save_json_pos <- purrr::possibly(save_json, NULL)
 
 #' save_rds
 #' @export
-save_rds <- function(file, name, path) saveRDS(dplyr::as_tibble(file), file = glue::glue("{path}/{name}.rds"))
+save_rds <- function(file, name, path) saveRDS(file, file = glue::glue("{path}/{name}.rds"))
 
 #' save_rds_pos
 #' @export
 save_rds_pos <- purrr::possibly(save_rds, NULL)
 # save_rdata <- function(file, name, path) save(file, file = glue::glue("{path}/{name}.RData"))
+
+#' load_json
+#' @export
+load_json <- function(path, name) dplyr::bind_cols(jsonlite::fromJSON(glue::glue("{path}/{name}.json")))
+
+#' load_rds
+#' @export
+load_rds <- function(path, name) readr::read_rds(glue::glue("{path}/{name}.rds"))
+
+
+

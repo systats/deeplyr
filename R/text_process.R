@@ -1,6 +1,6 @@
 #' fit_tokenizer
 #' @export
-fit_tokenizer <- function(text, max_words = 10000, max_docs = .5, min_word = 3, char_level = T, path = NULL){
+fit_tokenizer <- function(text, max_words = 10000, max_docs = .5, min_word = 3, char_level = F, path = NULL){
   
   vocab <- text2vec::itoken(text, progressbar = F) %>%
     text2vec::create_vocabulary(.) %>%
@@ -58,3 +58,14 @@ tokenize_text <- function(text, tok, seq_len = 100, multi = F, n_split = 10000){
     return(out)
   }
 }
+
+
+
+#' load_tokenizer
+#' @export
+load_tokenizer <- function(path) keras::load_text_tokenizer(glue::glue("{path}/tok"))
+
+
+#' save_keras_tokenizer
+#' @export
+save_keras_tokenizer <- function(model, path) keras::save_text_tokenizer(model, glue::glue("{path}/tok"))

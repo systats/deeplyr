@@ -368,7 +368,7 @@ predict_goalmodel <- function(self, new_data){
       purrr::map(dplyr::mutate_all, as.numeric) %>%
       purrr::reduce(dplyr::left_join, by = "team_id") %>%
       dplyr::mutate_if(is.numeric, round, 3) %>%
-      dplyr::mutate(side = rep(c("local", "visitor"), n()/2)) %>%
+      dplyr::mutate(side = rep(c("local", "visitor"), dplyr::n()/2)) %>%
       ### could be more efficient
       tidyr::pivot_wider(names_from = side, values_from = team_id:(ncol(.)-1))
 }

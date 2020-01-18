@@ -81,7 +81,7 @@ bridge <- R6::R6Class(
     },
     
     stream_id_x = function(new_data){
-      d <- hardhat::forge(as_tibble(new_data), self$data$blueprint, outcomes = T)
+      d <- hardhat::forge(dplyr::as_tibble(new_data), self$data$blueprint, outcomes = T)
       extras <- dplyr::bind_cols(d$extras$roles)
       d$outcomes <- NULL
       list(extras, d$predictors) %>%
@@ -91,8 +91,8 @@ bridge <- R6::R6Class(
     
     stream_all = function(new_data) {
       forge_pos <- purrr::possibly(hardhat::forge, NULL)
-      d <- forge_pos(as_tibble(new_data), self$data$blueprint, outcomes = T)
-      if(is.null(d)) d <- forge_pos(as_tibble(new_data), self$data$blueprint, outcomes = F)
+      d <- forge_pos(dplyr::as_tibble(new_data), self$data$blueprint, outcomes = T)
+      if(is.null(d)) d <- forge_pos(dplyr::as_tibble(new_data), self$data$blueprint, outcomes = F)
       extra <- dplyr::bind_cols(d$extras$roles)
       list(extra, d$outcomes, d$predictors) %>%
         purrr::compact() %>% 

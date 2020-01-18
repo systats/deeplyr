@@ -91,7 +91,7 @@ learner <- R6::R6Class(
           ### reoreder local|visitor label
           dplyr::rename_at(-1, suf_to_pref) %>%
           ### apply suffix
-          dplyr::rename_at(-1:-3, ~ paste0(.x, "_", self$params$type, "_", suffix))
+          dplyr::rename_at(-1:-3, ~ paste0(.x, "_", suffix))
         
       } else {
         

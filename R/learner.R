@@ -83,7 +83,7 @@ learner <- R6::R6Class(
         stringr::str_remove_all("_")
       
       private$model_predict(self, new_data) %>%
-        select(-contains("team_id")) %>%
+        dplyr::select(-dplyr::contains("team_id")) %>%
         ### apply prefix other than team ids
         dplyr::rename_all(~ paste0(yname, "_", .x)) %>%
         ### reoreder local|visitor label

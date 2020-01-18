@@ -365,7 +365,7 @@ predict_goalmodel <- function(self, new_data){
    ### join
    list(probs, xg, estimates) %>%
       purrr::discard(is.null) %>%
-      purrr::map(mutate_all, as.numeric) %>%
+      purrr::map(dplyr::mutate_all, as.numeric) %>%
       purrr::reduce(dplyr::left_join, by = "team_id") %>%
       dplyr::mutate_if(is.numeric, round, 3) %>%
       dplyr::mutate(side = rep(c("local", "visitor"), n()/2)) %>%

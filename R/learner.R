@@ -78,7 +78,9 @@ learner <- R6::R6Class(
     
     predict_feature = function(new_data, suffix){
       
-      yname <- self$process$ask_y() %>% str_remove("^local_|^visitor_") %>% str_remove_all("_")
+      yname <- self$process$ask_y() %>% 
+        stringr::str_remove("^local_|^visitor_") %>% 
+        stringr::str_remove_all("_")
       
       private$model_predict(self, new_data) %>%
         select(-contains("team_id")) %>%

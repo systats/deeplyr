@@ -283,7 +283,7 @@ fit_goalmodel <- function(self){
    )
    
    ### linear outcome only!
-   if(is.null(f2$params$type)){
+   if(is.null(self$params$type)){
       form$model <- "poisson"
    } else {
       if(self$params$type == "poisson") form$model <- "poisson"

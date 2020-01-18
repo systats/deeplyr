@@ -272,12 +272,12 @@ goal_model <- function (goals1, goals2, team1, team2, x1 = NULL, x2 = NULL,
 #' @export
 fit_goalmodel <- function(self){
    
-   goals <- self$process$data$outcomes
+   outcomes <- self$process$data$outcomes
    predictors <- self$process$juice_x()
    
    form <- list(
-      goals1 = as.numeric(goals[[1]]), 
-      goals2 = as.numeric(goals[[2]]),
+      goals1 = as.numeric(outcomes[[1]]), 
+      goals2 = as.numeric(outcomes[[2]]),
       team1 = as.numeric(predictors[[1]]), 
       team2 = as.numeric(predictors[[2]])
    )
@@ -294,9 +294,9 @@ fit_goalmodel <- function(self){
    }
    ### due to performance issues
    #do.call(deeplyr::goal_model, form)
-   do.call(goalmodel::goalmodel, form)
+   goalmodel_pos <- deeplyr::goal_model
+   suppressWarnings(do.call(goalmodel_pos, form))
 }
-
 
 
 #' get_estimates 
@@ -350,8 +350,14 @@ suf_to_pref <- function(x){
 #' @export
 predict_goalmodel <- function(self, new_data){
    
+   if(is.null(self$model)){
+      out <- self$process$stream_id_x(new_data) %>%
+         mutate(error = "model failed")
+      return(out)
+   }
+   
    teams <- self$process$stream(new_data) %>% 
-      set_names(c("team1", "team2"))
+      purrr::set_names(c("team1", "team2"))
    
    # ### Extract probabilities
    probs <- get_probs_pos(self$model, teams)
@@ -362,33 +368,19 @@ predict_goalmodel <- function(self, new_data){
    ### Extract attack and defense param
    estimates <- get_estimates_pos(self$model)
    
-   ### join
-   list(probs, xg, estimates) %>%
+   weights <- list(probs, xg, estimates) %>%
       purrr::discard(is.null) %>%
       purrr::map(dplyr::mutate_all, as.numeric) %>%
       purrr::reduce(dplyr::left_join, by = "team_id") %>%
-      dplyr::mutate_if(is.numeric, round, 3) %>%
-      dplyr::mutate(side = rep(c("local", "visitor"), dplyr::n()/2)) %>%
-      ### could be more efficient
-      tidyr::pivot_wider(names_from = side, values_from = team_id:(ncol(.)-1))
+      dplyr::mutate_all(round, 3)
+
+   self$process$stream_id_x(new_data) %>%
+      #dplyr::select(game_id, contains("team_id")) %>%
+      tidyr::gather(side, team_id, -game_id) %>%
+      dplyr::mutate(side = stringr::str_extract(side, "^local|^visitor")) %>%
+      dplyr::left_join(weights, by = "team_id") %>%
+      tidyr::pivot_wider(id_cols = game_id, names_from = side, values_from = team_id:ncol(.))
 }
-
-
-# tidyr::pivot_longer(cols = team1:team2, names_to = "team", values_to = "team_id") %>%
-# tidyr::pivot_longer(cols = p1:p2, names_to = "side", values_to = "prob") %>%
-# dplyr::filter(
-#   (str_detect(team, "1") & str_detect(side, "1")) |
-#     (str_detect(team, "2") & str_detect(side, "2"))
-# ) %>%
-# dplyr::select(-team, -side)
-# tidyr::pivot_longer(cols = team1:team2, names_to = "team", values_to = "team_id") %>%
-# tidyr::pivot_longer(cols = expg1:expg2, names_to = "side", values_to = "expg") %>%
-# dplyr::filter(
-#   (str_detect(team, "1") & str_detect(side, "1")) |
-#     (str_detect(team, "2") & str_detect(side, "2"))
-# ) %>%
-# dplyr::select(-team, -side)
-
 
 
 #' load_rpart

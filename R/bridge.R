@@ -80,6 +80,15 @@ bridge <- R6::R6Class(
       data.matrix(self$stream(new_data))
     },
     
+    stream_id_x = function(new_data){
+      d <- hardhat::forge(as_tibble(new_data), self$data$blueprint, outcomes = T)
+      extras <- dplyr::bind_cols(d$extras$roles)
+      d$outcomes <- NULL
+      list(extras, d$predictors) %>%
+        purrr::compact() %>% 
+        purrr::reduce(dplyr::bind_cols)
+    },
+    
     stream_all = function(new_data) {
       forge_pos <- purrr::possibly(hardhat::forge, NULL)
       d <- forge_pos(as_tibble(new_data), self$data$blueprint, outcomes = T)

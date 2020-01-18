@@ -66,10 +66,11 @@ learner <- R6::R6Class(
     
     predict = function(new_data, dev = F){
       
-      self$preds <- private$model_predict(self, new_data) %>% 
-        dplyr::bind_cols(self$process$stream_all(new_data))
-      
+      self$preds <- private$model_predict(self, new_data) 
       if(dev) return(self$preds)
+      
+      self$preds <- self$preds%>% 
+        dplyr::bind_cols(self$process$stream_all(new_data))
       
       if(self$process$ask_y() %in% colnames(as_tibble(new_data))){
         self$metrics <- model_eval(self, self$process$ask_y())
@@ -78,21 +79,26 @@ learner <- R6::R6Class(
     
     predict_feature = function(new_data, suffix){
       
-      yname <- self$process$ask_y() %>% 
-        stringr::str_remove("^local_|^visitor_") %>% 
-        stringr::str_remove_all("_")
-      
-      private$model_predict(self, new_data) %>%
-        dplyr::select(-dplyr::contains("team_id")) %>%
-        ### apply prefix other than team ids
-        dplyr::rename_all(~ paste0(yname, "_", .x)) %>%
-        ### reoreder local|visitor label
-        dplyr::rename_all(suf_to_pref) %>%
-        ### apply suffix
-        dplyr::rename_at(-1, ~ paste0(.x, "_", self$params$type, "_", suffix)) %>%
-        ### combine all data
-        cbind(self$process$stream_all(new_data), .)
-
+      if(!is.null(self$model)){
+        
+        yname <- self$process$ask_y() %>% 
+          stringr::str_remove("^local_|^visitor_") %>% 
+          stringr::str_remove_all("_")
+        
+        private$model_predict(self, new_data) %>%
+          ### apply prefix other than team ids
+          dplyr::rename_at(-1:-3, ~ paste0(yname, "_", .x)) %>%
+          ### reoreder local|visitor label
+          dplyr::rename_at(-1, suf_to_pref) %>%
+          ### apply suffix
+          dplyr::rename_at(-1:-3, ~ paste0(.x, "_", self$params$type, "_", suffix))
+        
+      } else {
+        
+        self$process$stream_id_x(new_data) %>%
+          dplyr::select(game_id, contains("team_id"))
+        
+      }
     },
     
     # test = function(){

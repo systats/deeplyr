@@ -377,6 +377,7 @@ predict_goalmodel <- function(self, new_data){
       tidyr::gather(side, team_id, -game_id) %>%
       dplyr::mutate(side = stringr::str_extract(side, "^local|^visitor")) %>%
       dplyr::left_join(weights, by = "team_id") %>%
+      dplyr::distinct(game_id, team_id, .keep_all = T) %>%
       tidyr::pivot_wider(id_cols = game_id, names_from = side, values_from = team_id:ncol(.))
 }
 

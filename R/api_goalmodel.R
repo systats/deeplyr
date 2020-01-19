@@ -351,9 +351,7 @@ suf_to_pref <- function(x){
 predict_goalmodel <- function(self, new_data){
    
    if(is.null(self$model)){
-      out <- self$process$stream_id_x(new_data) %>%
-         mutate(error = "model failed")
-      return(out)
+      return(self$process$stream_id_x(new_data))
    }
    
    teams <- self$process$stream(new_data) %>% 

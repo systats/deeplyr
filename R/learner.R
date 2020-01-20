@@ -155,7 +155,7 @@ fit_learner <- function(x, y, params, task, backend){
 
 #' fit_cv
 #' @export
-fit_cv <- function(rsample, rec, params, task, backend){
+fit_cv <- function(rsample, rec, params, task, backend, path = NULL){
   
   out <- rsample %>%
     dplyr::mutate(models = map(splits, ~{

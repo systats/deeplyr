@@ -169,7 +169,7 @@ fit_cv <- function(rsample, rec, params, task, backend, path = NULL){
     ) %>% #furrr::future_  #, .progress = F
     dplyr::mutate(
       preds = purrr::map(models, ~.x$preds),
-      metrics = purrr::map(models, ~.x$metrics)
+      metrics = purrr::map(models, ~ as.list(.x$metrics))
     )
   
   if(is.null(path)) return(out)

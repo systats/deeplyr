@@ -4,7 +4,7 @@
 \alias{fit_cv}
 \title{fit_cv}
 \usage{
-fit_cv(rsample, rec, params, task, backend)
+fit_cv(rsample, rec, params, task, backend, path = NULL)
 }
 \description{
 fit_cv

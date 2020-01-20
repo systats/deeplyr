@@ -2,10 +2,10 @@
 % Please edit documentation in R/api_goalmodel.R
 \name{get_estimates}
 \alias{get_estimates}
-\title{get_estimates}
+\title{get_probs}
 \usage{
-get_estimates(model)
+get_estimates(model, x_test)
 }
 \description{
-get_estimates
+get_probs
 }

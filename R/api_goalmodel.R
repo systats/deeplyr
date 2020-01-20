@@ -12,8 +12,6 @@ fit_goalmodel <- function(self){
       team2 = as.numeric(predictors[[2]])
    )
    
-   if(!is.null(self$params$optimizer)) form$optim_method <- self$params$optimizer
-   
    ### linear outcome only!
    if(is.null(self$params$type)){
       form$model <- "poisson"
@@ -31,34 +29,40 @@ fit_goalmodel <- function(self){
 }
 
 
-#' get_estimates 
+#' get_probs 
 #' @export
-get_estimates <- function(model){
-   model$parameters[c("attack", "defense")] %>% 
-      purrr::imap(~tibble::enframe(.x, name = "team_id", .y)) %>% 
+get_estimates <- function(model, x_test){
+   weights <- model$parameters[c("attack", "defense")] %>%
+      purrr::imap(~tibble::enframe(.x, name = "team_id", .y)) %>%
       purrr::reduce(dplyr::full_join, by = "team_id")
+   
+   x_test %>%
+      dplyr::left_join(weights %>% dplyr::rename_at(vars(-game_id), paste0("local_")), by = "local_team_id") %>%
+      dplyr::left_join(weights %>% dplyr::rename_at(vars(-game_id), paste0("visitor_")), by = "visitor_team_id")
 }
 
 #' get_probs 
 #' @export
 get_probs <- function(model, x_test){
    
-   results <- goalmodel::predict_result(model, team1 = x_test$team1, team2 = x_test$team2, return_df = T)
-   dplyr::bind_rows(
-      results %>% dplyr::select(team_id = team1, p = p1),
-      results %>% dplyr::select(team_id = team2, p = p2)
-   )
+   results <- goalmodel::predict_result(model, team1 = x_test$team1, team2 = x_test$team2, return_df = T) %>%
+      dplyr::rename(local_team_id = team1, visitor_team_id = team2, local_p = p1, draw_p = p, visitor_p = p2)
+   # dplyr::bind_rows(
+   #    results %>% dplyr::select(team_id = team1, p = p1),
+   #    results %>% dplyr::select(team_id = team2, p = p2)
+   # )
    
 }
 
 #' get_expg_pos 
 #' @export
 get_expg <- function(model, x_test){
-   goals <- goalmodel::predict_expg(model, team1 = x_test$team1, team2 = x_test$team2, return_df = T) 
-   dplyr::bind_rows(
-      goals %>% dplyr::select(team_id = team1, expg = expg1),
-      goals %>% dplyr::select(team_id = team2, expg = expg2)
-   )
+   goalmodel::predict_expg(model, team1 = x_test$team1, team2 = x_test$team2, return_df = T) %>%
+      dplyr::rename(local_team_id = team1, visitor_team_id = team2, local_expg = expg1, visitor_expg = expg2)
+   # dplyr::bind_rows(
+   #    goals %>% dplyr::select(team_id = team1, expg = expg1),
+   #    goals %>% dplyr::select(team_id = team2, expg = expg2)
+   # )
 }
 
 #' get_probs_pos 
@@ -89,27 +93,28 @@ predict_goalmodel <- function(self, new_data){
    teams <- self$process$stream(new_data) %>% 
       purrr::set_names(c("team1", "team2"))
    
-   # ### Extract probabilities
+   ### Extract expectedprobabilities
    probs <- get_probs_pos(self$model, teams)
    
    ### Extract expected goals
    xg <- get_expg_pos(self$model, teams)
    
    ### Extract attack and defense param
-   estimates <- get_estimates_pos(self$model)
+   estimates <- get_estimates_pos(self$model, teams)
    
-   weights <- list(probs, xg, estimates) %>%
+   self$process$stream_id_x(new_data) %>%
+      list(., probs, xg, estimates) %>%
       purrr::discard(is.null) %>%
       purrr::map(dplyr::mutate_all, as.numeric) %>%
-      purrr::reduce(dplyr::left_join, by = "team_id") %>%
+      purrr::reduce(dplyr::left_join, by = c("local_team_id", "visitor_team_id")) %>%
       dplyr::mutate_all(round, 3)
 
-   self$process$stream_id_x(new_data) %>%
-      tidyr::gather(side, team_id, -game_id) %>%
-      dplyr::mutate(side = stringr::str_extract(side, "^local|^visitor")) %>%
-      dplyr::left_join(weights, by = "team_id") %>%
-      dplyr::distinct(game_id, team_id, .keep_all = T) %>%
-      tidyr::pivot_wider(id_cols = game_id, names_from = side, values_from = team_id:ncol(.))
+   # self$process$stream_id_x(new_data) %>%
+   #    tidyr::gather(side, team_id, -game_id) %>%
+   #    dplyr::mutate(side = stringr::str_extract(side, "^local|^visitor")) %>%
+   #    dplyr::left_join(weights, by = "team_id") %>%
+   #    dplyr::distinct(game_id, team_id, .keep_all = T) %>%
+   #    tidyr::pivot_wider(id_cols = game_id, names_from = side, values_from = team_id:ncol(.))
 }
 
 

@@ -43,10 +43,10 @@ rec <- recipe(local_team_score + visitor_team_score ~ local_team_id + visitor_te
   update_role(game_id, new_role = "ID")
 
 # f1 <- fit_learner(rec, games, params = NULL, task = "linear", backend = "goalmodel")
-f2 <- learner$new(params = list(type = "negbin"), task = "linear", backend = "goalmodel")
-f2$fit(rec, train[1,])
+f2 <- learner$new(params = list(type = "pois"), task = "linear", backend = "goalmodel")
+f2$fit_pair(rec, na.omit(train[1:100,]))
 
-preds <- f2$predict_feature(test[1,], "w200")
+preds <- f2$predict_pair(test[1:100,], "w200")
 preds
 ```
 
@@ -60,9 +60,9 @@ rec <- recipe(local_team_score + visitor_team_score ~ local_team_id + visitor_te
 
 # f1 <- fit_learner(rec, games, params = NULL, task = "linear", backend = "goalmodel")
 f2 <- learner$new(params = list(init = 1500, k = 30), task = "linear", backend = "elo")
-f2$fit(rec, train[1,])
+f2$fit_pair(rec, train[1:100,])
 
-preds <- f2$predict_feature(test[3,], "w200")
+preds <- f2$predict_pair(test[3,], "w200")
 preds
 ```
 

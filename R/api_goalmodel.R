@@ -12,6 +12,8 @@ fit_goalmodel <- function(self){
       team2 = as.numeric(predictors[[2]])
    )
    
+   if(!is.null(self$params$optimizer)) form$optim_method <- self$params$optimizer
+   
    ### linear outcome only!
    if(is.null(self$params$type)){
       form$model <- "poisson"

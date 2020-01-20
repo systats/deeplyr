@@ -33,6 +33,8 @@ test <- games %>%
 ```
 
 
+## POIS
+
 ```{r}
 # devtools::install()
 devtools::document()
@@ -50,65 +52,21 @@ preds
 
 
 ```{r}
-#' slide_window 
-#' @export
-slide_window <- function(
-    test, 
-    train, 
-    primitive = NULL,
-    window = 60, 
-    suffix = ""
-){
-  
-  test %>%
-    split(1:nrow(.)) %>%
-    furrr::future_map_dfr(~{
-      
-      ### Define training time ranges
-      cuttrain <- .x$date[1] - as.difftime(window + 1, units = "days")
-      cuttest <- .x$date[1] - as.difftime(1, units = "days")
-      
-      ### Filter data by window and league
-      focus <- train[
-        train$date > cuttrain & 
-        train$date < cuttest &
-        (train$local_team_id %in% c(.x$local_team_id, .x$visitor_team_id) | 
-        train$visitor_team_id %in% c(.x$visitor_team_id, .x$local_team_id)), ]
-      
-      if(nrow(focus) < 2) {
-        empty <- .x %>%
-          dplyr::select(game_id, contains("team_id")) %>%
-          mutate(error = "n < 2")
-        return(empty)
-      }
-      
-      #glimpse(.x[,1])
-      primitive(.x, focus, suffix)
-    }, .progress = T)
-}
-```
-
-
-```{r}
-# devtools::document()
 # devtools::install()
+devtools::document()
 
-rec <- recipe(local_team_score + visitor_team_score ~ local_team_id + visitor_team_id + game_id, data = head(train)) %>%
+rec <- recipe(local_team_score + visitor_team_score ~ local_team_id + visitor_team_id + game_id, data = head(games)) %>%
   update_role(game_id, new_role = "ID")
 
-fun <- function(test, train, suffix){
+# f1 <- fit_learner(rec, games, params = NULL, task = "linear", backend = "goalmodel")
+f2 <- learner$new(params = list(init = 1500, k = 30), task = "linear", backend = "elo")
+f2$fit(rec, train[1,])
 
-  f2 <- learner$new(params = list(type = "pois"), task = "linear", backend = "goalmodel")
-  f2$fit(rec, train) 
-  f2$predict_feature(test, suffix)
-  
-}
-
-library(furrr)
-plan(multiprocess)
-#plan(sequential)
-fea <- slide_window(test[1:1000,], train, fun, suffix = "w100")
+preds <- f2$predict_feature(test[3,], "w200")
+preds
 ```
+
+
 
 
 

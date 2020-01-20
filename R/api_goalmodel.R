@@ -1,3 +1,127 @@
+#' fit_goalmodel
+#' @export
+fit_goalmodel <- function(self){
+   
+   outcomes <- self$process$data$outcomes
+   predictors <- self$process$juice_x()
+   
+   form <- list(
+      goals1 = as.numeric(outcomes[[1]]), 
+      goals2 = as.numeric(outcomes[[2]]),
+      team1 = as.numeric(predictors[[1]]), 
+      team2 = as.numeric(predictors[[2]])
+   )
+   
+   ### linear outcome only!
+   if(is.null(self$params$type)){
+      form$model <- "poisson"
+   } else {
+      if(self$params$type == "poisson") form$model <- "poisson"
+      if(self$params$type == "dc") form$dc <- T
+      if(self$params$type == "rs") form$rs <- T
+      if(self$params$type == "negbin") form$model <- "negbin"
+      if(self$params$type == "gaus") form$model <- "gaussian"
+   }
+   ### due to performance issues
+   #do.call(deeplyr::goal_model, form)
+   goalmodel_pos <- deeplyr::goal_model
+   suppressWarnings(do.call(goalmodel_pos, form))
+}
+
+
+#' get_estimates 
+#' @export
+get_estimates <- function(model){
+   model$parameters[c("attack", "defense")] %>% 
+      purrr::imap(~tibble::enframe(.x, name = "team_id", .y)) %>% 
+      purrr::reduce(dplyr::full_join, by = "team_id")
+}
+
+#' get_probs 
+#' @export
+get_probs <- function(model, x_test){
+   
+   results <- goalmodel::predict_result(model, team1 = x_test$team1, team2 = x_test$team2, return_df = T)
+   dplyr::bind_rows(
+      results %>% dplyr::select(team_id = team1, p = p1),
+      results %>% dplyr::select(team_id = team2, p = p2)
+   )
+   
+}
+
+#' get_expg_pos 
+#' @export
+get_expg <- function(model, x_test){
+   goals <- goalmodel::predict_expg(model, team1 = x_test$team1, team2 = x_test$team2, return_df = T) 
+   dplyr::bind_rows(
+      goals %>% dplyr::select(team_id = team1, expg = expg1),
+      goals %>% dplyr::select(team_id = team2, expg = expg2)
+   )
+}
+
+#' get_probs_pos 
+#' @export
+get_probs_pos <- purrr::possibly(get_probs, NULL)
+
+#' get_estimates_pos 
+#' @export
+get_estimates_pos <- purrr::possibly(get_estimates, NULL)
+
+#' get_expg_pos 
+#' @export
+get_expg_pos <- purrr::possibly(get_expg, NULL)
+
+suf_to_pref <- function(x){
+   pref <- x %>% stringr::str_extract("_[a-z]+$") %>% stringr::str_remove("_")
+   paste0(pref, "_", stringr::str_remove(x, "_[a-z]+$"))
+}
+
+#' predict_goalmodel
+#' @export
+predict_goalmodel <- function(self, new_data){
+   
+   if(is.null(self$model)){
+      return(self$process$stream_id_x(new_data))
+   }
+   
+   teams <- self$process$stream(new_data) %>% 
+      purrr::set_names(c("team1", "team2"))
+   
+   # ### Extract probabilities
+   probs <- get_probs_pos(self$model, teams)
+   
+   ### Extract expected goals
+   xg <- get_expg_pos(self$model, teams)
+   
+   ### Extract attack and defense param
+   estimates <- get_estimates_pos(self$model)
+   
+   weights <- list(probs, xg, estimates) %>%
+      purrr::discard(is.null) %>%
+      purrr::map(dplyr::mutate_all, as.numeric) %>%
+      purrr::reduce(dplyr::left_join, by = "team_id") %>%
+      dplyr::mutate_all(round, 3)
+
+   self$process$stream_id_x(new_data) %>%
+      tidyr::gather(side, team_id, -game_id) %>%
+      dplyr::mutate(side = stringr::str_extract(side, "^local|^visitor")) %>%
+      dplyr::left_join(weights, by = "team_id") %>%
+      dplyr::distinct(game_id, team_id, .keep_all = T) %>%
+      tidyr::pivot_wider(id_cols = game_id, names_from = side, values_from = team_id:ncol(.))
+}
+
+
+#' load_rpart
+#' @export
+load_goalmodel <- function(path){
+}
+
+#' save_rpart
+#' @export
+save_goalmodel <- function(file, name, path){
+}
+
+
 #' goal_model
 #' @export
 goal_model <- function (goals1, goals2, team1, team2, x1 = NULL, x2 = NULL, 
@@ -265,129 +389,4 @@ goal_model <- function (goals1, goals2, team1, team2, x1 = NULL, x2 = NULL,
                fixed_params = fixed_params, maxgoal = maxgoal)
    class(out) <- "goalmodel"
    return(out)
-}
-
-
-#' fit_goalmodel
-#' @export
-fit_goalmodel <- function(self){
-   
-   outcomes <- self$process$data$outcomes
-   predictors <- self$process$juice_x()
-   
-   form <- list(
-      goals1 = as.numeric(outcomes[[1]]), 
-      goals2 = as.numeric(outcomes[[2]]),
-      team1 = as.numeric(predictors[[1]]), 
-      team2 = as.numeric(predictors[[2]])
-   )
-   
-   ### linear outcome only!
-   if(is.null(self$params$type)){
-      form$model <- "poisson"
-   } else {
-      if(self$params$type == "poisson") form$model <- "poisson"
-      if(self$params$type == "dc") form$dc <- T
-      if(self$params$type == "rs") form$rs <- T
-      if(self$params$type == "negbin") form$model <- "negbin"
-      if(self$params$type == "gaus") form$model <- "gaussian"
-   }
-   ### due to performance issues
-   #do.call(deeplyr::goal_model, form)
-   goalmodel_pos <- deeplyr::goal_model
-   suppressWarnings(do.call(goalmodel_pos, form))
-}
-
-
-#' get_estimates 
-#' @export
-get_estimates <- function(model){
-   model$parameters[c("attack", "defense")] %>% 
-      purrr::imap(~tibble::enframe(.x, name = "team_id", .y)) %>% 
-      purrr::reduce(dplyr::full_join, by = "team_id")
-}
-
-#' get_probs 
-#' @export
-get_probs <- function(model, x_test){
-   
-   results <- goalmodel::predict_result(model, team1 = x_test$team1, team2 = x_test$team2, return_df = T)
-   dplyr::bind_rows(
-      results %>% dplyr::select(team_id = team1, p = p1),
-      results %>% dplyr::select(team_id = team2, p = p2)
-   )
-   
-}
-
-#' get_expg_pos 
-#' @export
-get_expg <- function(model, x_test){
-   goals <- goalmodel::predict_expg(model, team1 = x_test$team1, team2 = x_test$team2, return_df = T) 
-   dplyr::bind_rows(
-      goals %>% dplyr::select(team_id = team1, expg = expg1),
-      goals %>% dplyr::select(team_id = team2, expg = expg2)
-   )
-}
-
-#' get_probs_pos 
-#' @export
-get_probs_pos <- purrr::possibly(get_probs, NULL)
-
-#' get_estimates_pos 
-#' @export
-get_estimates_pos <- purrr::possibly(get_estimates, NULL)
-
-#' get_expg_pos 
-#' @export
-get_expg_pos <- purrr::possibly(get_expg, NULL)
-
-suf_to_pref <- function(x){
-   pref <- x %>% stringr::str_extract("_[a-z]+$") %>% stringr::str_remove("_")
-   paste0(pref, "_", stringr::str_remove(x, "_[a-z]+$"))
-}
-
-#' predict_goalmodel
-#' @export
-predict_goalmodel <- function(self, new_data){
-   
-   if(is.null(self$model)){
-      return(self$process$stream_id_x(new_data))
-   }
-   
-   teams <- self$process$stream(new_data) %>% 
-      purrr::set_names(c("team1", "team2"))
-   
-   # ### Extract probabilities
-   probs <- get_probs_pos(self$model, teams)
-   
-   ### Extract expected goals
-   xg <- get_expg_pos(self$model, teams)
-   
-   ### Extract attack and defense param
-   estimates <- get_estimates_pos(self$model)
-   
-   weights <- list(probs, xg, estimates) %>%
-      purrr::discard(is.null) %>%
-      purrr::map(dplyr::mutate_all, as.numeric) %>%
-      purrr::reduce(dplyr::left_join, by = "team_id") %>%
-      dplyr::mutate_all(round, 3)
-
-   self$process$stream_id_x(new_data) %>%
-      #dplyr::select(game_id, contains("team_id")) %>%
-      tidyr::gather(side, team_id, -game_id) %>%
-      dplyr::mutate(side = stringr::str_extract(side, "^local|^visitor")) %>%
-      dplyr::left_join(weights, by = "team_id") %>%
-      dplyr::distinct(game_id, team_id, .keep_all = T) %>%
-      tidyr::pivot_wider(id_cols = game_id, names_from = side, values_from = team_id:ncol(.))
-}
-
-
-#' load_rpart
-#' @export
-load_goalmodel <- function(path){
-}
-
-#' save_rpart
-#' @export
-save_goalmodel <- function(file, name, path){
 }

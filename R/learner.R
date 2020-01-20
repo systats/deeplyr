@@ -77,7 +77,19 @@ learner <- R6::R6Class(
       }
     },
     
-    predict_feature = function(new_data, suffix){
+    fit_pair = function(x, y){
+      
+      ### freeze training data + pre-processing steps
+      self$process$bake(x, y)
+      
+      start <- Sys.time()
+      
+      self$model <- private$model_fit_pair(self)
+      
+      self$meta$runtime <- as.numeric(Sys.time() - start)
+    },
+    
+    predict_pair = function(new_data, suffix){
       
       if(!is.null(self$model)){
         
@@ -85,7 +97,7 @@ learner <- R6::R6Class(
           stringr::str_remove("^local_|^visitor_") %>% 
           stringr::str_remove_all("_")
         
-        private$model_predict(self, new_data) %>%
+        private$model_predict_pair(self, new_data) %>%
           ### apply prefix other than team ids
           dplyr::rename_at(-1:-3, ~ paste0(yname, "_", .x)) %>%
           ### reoreder local|visitor label
@@ -100,17 +112,7 @@ learner <- R6::R6Class(
         
       }
     },
-    
-    # test = function(){
-    #   # if(self$meta$task == "linear"){
-    #   #   self$metrics <- self$preds %>% 
-    #   #     yardstick::metrics(truth = .data[[actual]], estimate =  pred)
-    #   # } else {
-    #   #   self$metrics <- self$preds %>% 
-    #   #     yardstick::metrics(truth = .data[[actual]], estimate = pred, contains("prob"))
-    #   #} 
-    # },
-    
+
     save = function(path = NULL){
       
       if(is.null(path)) path <- "."
@@ -154,7 +156,8 @@ fit_learner <- function(x, y, params, task, backend){
 #' fit_cv
 #' @export
 fit_cv <- function(rsample, rec, params, task, backend){
-  rsample %>%
+  
+  out <- rsample %>%
     dplyr::mutate(models = map(splits, ~{
       g <- deeplyr::fit_learner(
         rec, dplyr::bind_rows(rsample::analysis(.x)), 
@@ -168,6 +171,10 @@ fit_cv <- function(rsample, rec, params, task, backend){
       preds = purrr::map(models, ~.x$preds),
       metrics = purrr::map(models, ~.x$metrics)
     )
+  
+  if(is.null(path)) return(out)
+  out %>% dplyr::select(id, metrics) %>% save_json(., name = "cv_metrics", path = path)
+  out %>% dplyr::select(id, preds) %>% save_rds(., name = "cv_preds", path = path)
 }
 
 
@@ -184,7 +191,7 @@ future_fit_cv <- function(rsample, rec, params, task, backend){
       g$predict(new_data = dplyr::bind_rows(rsample::assessment(.x)))
       return(g)
     }, .progress = T)
-    ) %>% #furrr::future_  #, .progress = F
+    ) %>% 
     dplyr::mutate(
       preds = purrr::map(models, ~.x$preds),
       metrics = purrr::map(models, ~.x$metrics)

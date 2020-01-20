@@ -10,6 +10,10 @@ backend <- R6::R6Class("backend",
     model_save = NULL,
     model_load = NULL,
     
+    model_fit_pair = NULL,
+    model_predict_pair = NULL,
+    
+    
     model_backend = function(){
       
       ### keras
@@ -99,12 +103,13 @@ backend <- R6::R6Class("backend",
       
       ### goalmodel
       if(self$meta$backend == "goalmodel"){
-        
-        private$model_fit <- fit_goalmodel
-        private$model_predict <- predict_goalmodel
-        # private$model_save <- save_goalmodel
-        # private$model_load <- load_goalmodel
-        
+        private$model_fit_pair <- fit_goalmodel
+        private$model_predict_pair <- predict_goalmodel
+      }
+      ### elo
+      if(self$meta$backend == "elo"){
+        private$model_fit_pair <- fit_elo
+        private$model_predict_pair <- predict_elo
       }
     }
   )

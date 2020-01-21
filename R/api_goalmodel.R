@@ -47,7 +47,6 @@ get_estimates <- function(model, x_test){
 get_probs <- function(model, x_test){
    
    results <- goalmodel::predict_result(model, team1 = x_test$local_team_id, team2 = x_test$visitor_team_id, return_df = T) %>%
-      glimpse %>%
       dplyr::rename(local_team_id = team1, visitor_team_id = team2, local_p = p1, draw_p = pd, visitor_p = p2)
    # dplyr::bind_rows(
    #    results %>% dplyr::select(team_id = team1, p = p1),

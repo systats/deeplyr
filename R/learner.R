@@ -99,7 +99,7 @@ learner <- R6::R6Class(
         
         private$model_predict_pair(self, new_data) %>%
           ### apply prefix other than team ids
-          dplyr::rename_at(-1:-3, ~ paste0(.x, "_", yname, suffix))
+          dplyr::rename_at(-1:-3, ~ paste0(.x, "_", yname, "_", suffix))
         
       } else {
         

@@ -99,9 +99,9 @@ learner <- R6::R6Class(
         
         private$model_predict_pair(self, new_data) %>%
           ### apply prefix other than team ids
-          dplyr::rename_at(-1:-3, ~ paste0(yname, "_", .x)) %>%
+          dplyr::rename_at(-1:-3, ~ paste0(.x, "_", yname)) %>%
           ### reoreder local|visitor label
-          dplyr::rename_at(-1, suf_to_pref) %>%
+          #dplyr::rename_at(-1, suf_to_pref) %>%
           ### apply suffix
           dplyr::rename_at(-1:-3, ~ paste0(.x, "_", suffix))
         

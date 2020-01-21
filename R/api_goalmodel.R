@@ -34,19 +34,21 @@ fit_goalmodel <- function(self){
 get_estimates <- function(model, x_test){
    weights <- model$parameters[c("attack", "defense")] %>%
       purrr::imap(~tibble::enframe(.x, name = "team_id", .y)) %>%
-      purrr::reduce(dplyr::full_join, by = "team_id")
+      purrr::reduce(dplyr::full_join, by = "team_id") %>%
+      dplyr::mutate_all(as.numeric)
    
    x_test %>%
-      dplyr::left_join(weights %>% dplyr::rename_at(vars(-game_id), paste0("local_")), by = "local_team_id") %>%
-      dplyr::left_join(weights %>% dplyr::rename_at(vars(-game_id), paste0("visitor_")), by = "visitor_team_id")
+      dplyr::left_join(weights %>% dplyr::rename_all(~paste0("local_", .x)), by = "local_team_id") %>%
+      dplyr::left_join(weights %>% dplyr::rename_all(~paste0("visitor_", .x)), by = "visitor_team_id")
 }
 
 #' get_probs 
 #' @export
 get_probs <- function(model, x_test){
    
-   results <- goalmodel::predict_result(model, team1 = x_test$team1, team2 = x_test$team2, return_df = T) %>%
-      dplyr::rename(local_team_id = team1, visitor_team_id = team2, local_p = p1, draw_p = p, visitor_p = p2)
+   results <- goalmodel::predict_result(model, team1 = x_test$local_team_id, team2 = x_test$visitor_team_id, return_df = T) %>%
+      glimpse %>%
+      dplyr::rename(local_team_id = team1, visitor_team_id = team2, local_p = p1, draw_p = pd, visitor_p = p2)
    # dplyr::bind_rows(
    #    results %>% dplyr::select(team_id = team1, p = p1),
    #    results %>% dplyr::select(team_id = team2, p = p2)
@@ -57,7 +59,7 @@ get_probs <- function(model, x_test){
 #' get_expg_pos 
 #' @export
 get_expg <- function(model, x_test){
-   goalmodel::predict_expg(model, team1 = x_test$team1, team2 = x_test$team2, return_df = T) %>%
+   goalmodel::predict_expg(model, team1 = x_test$local_team_id, team2 = x_test$visitor_team_id, return_df = T) %>%
       dplyr::rename(local_team_id = team1, visitor_team_id = team2, local_expg = expg1, visitor_expg = expg2)
    # dplyr::bind_rows(
    #    goals %>% dplyr::select(team_id = team1, expg = expg1),
@@ -90,17 +92,16 @@ predict_goalmodel <- function(self, new_data){
       return(self$process$stream_id_x(new_data))
    }
    
-   teams <- self$process$stream(new_data) %>% 
-      purrr::set_names(c("team1", "team2"))
+   teams <- self$process$stream(new_data)
    
    ### Extract expectedprobabilities
-   probs <- get_probs_pos(self$model, teams)
+   probs <- get_probs(self$model, teams)
    
    ### Extract expected goals
-   xg <- get_expg_pos(self$model, teams)
+   xg <- get_expg(self$model, teams)
    
    ### Extract attack and defense param
-   estimates <- get_estimates_pos(self$model, teams)
+   estimates <- get_estimates(self$model, teams)
    
    self$process$stream_id_x(new_data) %>%
       list(., probs, xg, estimates) %>%

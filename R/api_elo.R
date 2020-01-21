@@ -34,10 +34,20 @@ predict_elo <- function(self, new_data){
     tidyr::unnest(cols = elo) %>%
     dplyr::mutate_all(as.numeric)
   
-  self$process$stream_id_x(new_data) %>%
-    tidyr::gather(side, team_id, -game_id) %>%
-    dplyr::mutate(side = stringr::str_extract(side, "^local|^visitor")) %>%
-    dplyr::left_join(weights, by = "team_id") %>%
-    dplyr::distinct(game_id, team_id, .keep_all = T) %>%
-    tidyr::pivot_wider(id_cols = game_id, names_from = side, values_from = team_id:ncol(.))
+  elos <- self$process$stream_id_x(new_data) %>%
+    dplyr::left_join(weights %>% dplyr::rename_all(~paste0("local_", .x)), by = "local_team_id") %>%
+    dplyr::left_join(weights %>% dplyr::rename_all(~paste0("visitor_", .x)), by = "visitor_team_id")
+  
+  #glimpse(elos)
+  elos$local_elo_p <- elo::elo.prob(~ local_elo + visitor_elo, data = elos)
+  elos$visitor_elo_p <- 1 - elos$local_elo_p
+  
+  return(elos)
+  
+  # self$process$stream_id_x(new_data) %>%
+  #   tidyr::gather(side, team_id, -game_id) %>%
+  #   dplyr::mutate(side = stringr::str_extract(side, "^local|^visitor")) %>%
+  #   dplyr::left_join(weights, by = "team_id") %>%
+  #   dplyr::distinct(game_id, team_id, .keep_all = T) %>%
+  #   tidyr::pivot_wider(id_cols = game_id, names_from = side, values_from = team_id:ncol(.))
 }

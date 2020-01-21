@@ -32,15 +32,16 @@ predict_elo <- function(self, new_data){
     as.list() %>%
     tibble::enframe(name = "team_id", value = "elo") %>%
     tidyr::unnest(cols = elo) %>%
-    dplyr::mutate_all(as.numeric)
+    dplyr::mutate_all(as.numeric) %>%
+    dplyr::rename_at(-1, ~paste0("feature_", .x))
   
   elos <- self$process$stream_id_x(new_data) %>%
     dplyr::left_join(weights %>% dplyr::rename_all(~paste0("local_", .x)), by = "local_team_id") %>%
     dplyr::left_join(weights %>% dplyr::rename_all(~paste0("visitor_", .x)), by = "visitor_team_id")
   
   #glimpse(elos)
-  elos$local_elo_p <- elo::elo.prob(~ local_elo + visitor_elo, data = elos)
-  elos$visitor_elo_p <- 1 - elos$local_elo_p
+  elos$local_feature_p <- elo::elo.prob(~ local_feature_elo + visitor_feature_elo, data = elos)
+  elos$visitor_feature_p <- 1 - elos$local_feature_p
   
   return(elos)
   

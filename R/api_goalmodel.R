@@ -35,7 +35,8 @@ get_estimates <- function(model, x_test){
    weights <- model$parameters[c("attack", "defense")] %>%
       purrr::imap(~tibble::enframe(.x, name = "team_id", .y)) %>%
       purrr::reduce(dplyr::full_join, by = "team_id") %>%
-      dplyr::mutate_all(as.numeric)
+      dplyr::mutate_all(as.numeric) %>%
+      dplyr::rename_at(-1, ~paste0("feature_", .x))
    
    x_test %>%
       dplyr::left_join(weights %>% dplyr::rename_all(~paste0("local_", .x)), by = "local_team_id") %>%
@@ -45,25 +46,15 @@ get_estimates <- function(model, x_test){
 #' get_probs 
 #' @export
 get_probs <- function(model, x_test){
-   
    results <- goalmodel::predict_result(model, team1 = x_test$local_team_id, team2 = x_test$visitor_team_id, return_df = T) %>%
-      dplyr::rename(local_team_id = team1, visitor_team_id = team2, local_p = p1, draw_p = pd, visitor_p = p2)
-   # dplyr::bind_rows(
-   #    results %>% dplyr::select(team_id = team1, p = p1),
-   #    results %>% dplyr::select(team_id = team2, p = p2)
-   # )
-   
+      dplyr::rename(local_team_id = team1, visitor_team_id = team2, local_feature_p = p1, draw_feature_p = pd, visitor_feature_p = p2)
 }
 
 #' get_expg_pos 
 #' @export
 get_expg <- function(model, x_test){
    goalmodel::predict_expg(model, team1 = x_test$local_team_id, team2 = x_test$visitor_team_id, return_df = T) %>%
-      dplyr::rename(local_team_id = team1, visitor_team_id = team2, local_expg = expg1, visitor_expg = expg2)
-   # dplyr::bind_rows(
-   #    goals %>% dplyr::select(team_id = team1, expg = expg1),
-   #    goals %>% dplyr::select(team_id = team2, expg = expg2)
-   # )
+      dplyr::rename(local_team_id = team1, visitor_team_id = team2, local_feature_expg = expg1, visitor_feature_expg = expg2)
 }
 
 #' get_probs_pos 

@@ -63,7 +63,7 @@ f2 <- learner$new(params = list(init = 1500, k = 30), task = "linear", backend =
 f2$fit_pair(rec, train[1:100,])
 
 preds <- f2$predict_pair(test[3,], "w200")
-f2$predict_pair(test[3,], "w200")
+f2$predict_pair(test[4,], "w200")
 preds
 ```
 

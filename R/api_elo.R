@@ -39,7 +39,7 @@ predict_elo <- function(self, new_data){
     dplyr::left_join(weights %>% dplyr::rename_all(~paste0("local_", .x)), by = "local_team_id") %>%
     dplyr::left_join(weights %>% dplyr::rename_all(~paste0("visitor_", .x)), by = "visitor_team_id")
   
-  glimpse(elos)
+  # glimpse(elos)
   elos$local_elo_p <- elo::elo.prob(~ local_elo + visitor_elo, data = elos)
   elos$visitor_elo_p <- 1 - elos$local_elo_p
   

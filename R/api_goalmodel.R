@@ -98,7 +98,6 @@ predict_goalmodel <- function(self, new_data){
       purrr::discard(is.null) %>%
       purrr::map(dplyr::mutate_all, as.numeric) %>%
       purrr::reduce(dplyr::left_join, by = c("local_team_id", "visitor_team_id")) %>%
-      dplyr::mutate_all(round, 3) %>%
       dplyr::rename_all(~stringr::str_replace(.x, "feature", self$params$type))
 
    # self$process$stream_id_x(new_data) %>%

@@ -69,5 +69,4 @@ save_rpart <- function(file, name, path){
 feature_imp_rpart <- function(self){
   self$model$variable.importance %>%
     dplyr::as_tibble()
-    #dplyr::rename(feature = variable)
 }

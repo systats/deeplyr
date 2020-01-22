@@ -6,8 +6,8 @@ save_xgboost <- function(file, name, path) xgboost::xgb.save(file, fname = glue:
 #' feature_imp_xgboost
 feature_imp_xgboost <- function(self){
 
-   xgboost::xgb.importance(feature_names = colnames(self$data$train$x), model = self$model) %>%
-      as_tibble() %>%
+   xgboost::xgb.importance(feature_names = colnames(self$process$juice()), model = self$model) %>%
+      dplyr::as_tibble() %>%
       janitor::clean_names() 
 }
 

@@ -61,7 +61,7 @@ learner <- R6::R6Class(
       self$meta$runtime <- as.numeric(Sys.time() - start)
 
       ### if avaible: feature importane
-      if(!is.null(private$imp_model)) self$imps <- private$model_imp(self)
+      if(!is.null(private$model_imp)) self$imps <- private$model_imp(self)
     },
     
     predict = function(new_data, dev = F){
@@ -75,6 +75,7 @@ learner <- R6::R6Class(
       if(self$process$ask_y() %in% colnames(dplyr::as_tibble(new_data))){
         self$metrics <- model_eval(self, self$process$ask_y())
       }
+      
     },
     
     fit_pair = function(x, y){

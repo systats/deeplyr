@@ -75,7 +75,6 @@ learner <- R6::R6Class(
       if(self$process$ask_y() %in% colnames(dplyr::as_tibble(new_data))){
         self$metrics <- model_eval(self, self$process$ask_y())
       }
-      
     },
     
     fit_pair = function(x, y){
@@ -170,7 +169,7 @@ fit_cv <- function(rsample, rec, params, task, backend, path = NULL){
     )
   
   if(is.null(path)) return(out)
-  out %>% dplyr::select(id, metrics) %>% save_json(., name = "cv_metrics", path = path)
+  out$metrics %>% dplyr::bind_rows() %>% save_json(., name = "cv_metrics", path = path)
   out %>% dplyr::select(id, preds) %>% save_rds(., name = "cv_preds", path = path)
 }
 

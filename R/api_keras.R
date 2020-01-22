@@ -96,8 +96,6 @@ fit_keras <- function(self){
       
    }
    
-   #print(ncol(self$process$juice_x()))
-   
    if(is.null(self$params$input_dim)) self$params$input_dim <- ncol(self$process$juice_x())
    if(is.null(self$params$batch_size)) self$params$batch_size <- 30
    if(is.null(self$params$verbose)) self$params$verbose <- 1
@@ -124,12 +122,8 @@ fit_keras <- function(self){
       }
 
       summary(simple_model())
-      
       self$params$model <- list(simple_model)
    }
-
-   
-   self <<- self
    
    ### compile keras model
    model_params <- get_params(self$params$model[[1]], self$params)
@@ -144,6 +138,7 @@ fit_keras <- function(self){
    
    x_train <- self$process$juice_x_matrix()
    y_train <- as.numeric(as.character(self$process$juice_y()))
+   
    if(self$meta$task %in% c("binary", "multi")){
       if(min(y_train) == 1) y_train <- y_train - 1
    }
@@ -152,8 +147,8 @@ fit_keras <- function(self){
       object = model,
       x = x_train,
       y = y_train, #
-      batch_size = self$params$batch_size,
-      class_weight = self$params$class_weights,
+      batch_size = self$params[["batch_size"]],
+      class_weight = self$params[["class_weights"]],
       epochs = self$params$epochs, # old: x$epochs %error%  in combination with early stoping: free lunch!
       #callbacks = self$params$callbacks,
       verbose = self$params$verbose

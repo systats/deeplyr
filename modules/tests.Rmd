@@ -14,6 +14,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r, results="hide"}
 devtools::document()
 # devtools::install()
+devtools::load_all()
 # devtools::install_github("systats/deeplyr")
 pacman::p_load(tidyverse, tidymodels, recipes, h2o, furrr, hardhat)
 
@@ -285,15 +286,13 @@ b$formula
 
 
 ```{r, eval = F}
-rpart_results$preds
-rpart_results$meta %>% map_dfr(bind_cols)
-rpart_results %>% glimpse
-
 devtools::document()
 m <- learner$new(list(), task = "multi", backend = "rpart")
 m$fit(recs$rec[[3]], mtcars)
 m$predict(mtcars)
-m$test()
-
 m$metrics
+m$imps
+
+nn <- mlgraph::eval_classifier(m$preds, am, path = ".")
+evals
 ```

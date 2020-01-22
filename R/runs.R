@@ -41,6 +41,10 @@ load_params <- function(path) dplyr::bind_cols(jsonlite::fromJSON(glue::glue("{p
 #' @export 
 load_metrics <- function(path) dplyr::bind_cols(jsonlite::fromJSON(glue::glue("{path}/metrics.json")))
 
+#' load_cv
+#' @export 
+load_cv <- function(path) dplyr::bind_rows(jsonlite::fromJSON(glue::glue("{path}/cv_metrics.json")))
+
 #' load_evals
 #load_evals <- function(path) get(load(glue::glue("{path}/evals.Rdata")))
 
@@ -60,10 +64,9 @@ list_runs <- function(.data){
     dplyr::mutate(
       meta = purrr::map(run_path, possibly(load_meta, NULL)), 
       params = purrr::map(run_path, possibly(load_params, NULL)), 
-      metrics = purrr::map(run_path, possibly(load_metrics, NULL))
-      # evals = purrr::map(run_path, possibly(load_evals, NULL)),
-      # files = purrr::map(run_path, possibly(load_list_files, NULL))
-      # parents = purrr::map(run_path, ~{ .x; .data })#rep(list(.data), length(run_path))
+      metrics = purrr::map(run_path, possibly(load_metrics, NULL)),
+      cv_metrics = purrr::map(run_path, possibly(load_cv, NULL))
+      # evals = purrr::map(run_path, possibly(load_evals, NULL))
     ) %>%
     cbind(.data)
 }
@@ -94,6 +97,7 @@ init_parent <- function(parent){
   
   ### initalize parent
   if(nrow(par) == 0){
+    num <- stringr::str_pad((nrow(list_parents()) + 1), width = 2, side = "left", pad = "0")
     dir.create(glue::glue("models/{nrow(list_parents())+1}_{parent}"))
     par <- filter_parent(parent)
   }
@@ -109,7 +113,7 @@ init_run <- function(par_path){
   ### check if models exists
   init_models()
   
-  runid <- digest::digest(Sys.time())
+  runid <- stringr::str_sub(digest::digest(Sys.time()), 1, 8)
   run_path <- glue::glue("{par_path}/{runid}")
   dir.create(run_path)
   #dir.create(glue::glue("{run_path}/outputs"))

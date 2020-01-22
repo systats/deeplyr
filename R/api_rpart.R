@@ -67,6 +67,7 @@ save_rpart <- function(file, name, path){
 #' feature_imp_rpart
 #' @export
 feature_imp_rpart <- function(self){
-  self$model$variable.importance %>%
-    dplyr::as_tibble()
+  self$model$variable.importance %>% 
+      tibble::enframe("feature", "gain") %>%
+      dplyr::as_tibble()
 }

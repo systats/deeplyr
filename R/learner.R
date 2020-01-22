@@ -149,6 +149,20 @@ fit_learner <- function(x, y, params, task, backend){
   return(g)
 }
 
+#' vfold_cv_oob
+#' @export
+vfold_cv_oob <- function(data, v, split){
+  ### extract id and split vars
+  idx <- tibble(rid = 1:nrow(data), split = split)
+  ### find test instances
+  indices <- 1:5 %>% purrr::map(~{idx$rid[idx$split == .x]})
+  ### analysis/assessment
+  indices <- indices %>% purrr::map(rsample:::vfold_complement, n = nrow(idx))
+  ### make split obj.
+  split_objs <- purrr::map(indices, rsample:::make_splits, data = data, class = "vfold_split")
+  tibble::tibble(splits = split_objs, id = paste0("Fold", 1:length(split_objs)))
+}
+
 #' fit_cv
 #' @export
 fit_cv <- function(rsample, rec, params, task, backend, path = NULL){
@@ -159,10 +173,10 @@ fit_cv <- function(rsample, rec, params, task, backend, path = NULL){
         rec, dplyr::bind_rows(rsample::analysis(.x)), 
         params, task, backend
       )
-      g$predict(new_data = dplyr::bind_rows(rsample::assessment(.x)))
+      g$predict(dplyr::bind_rows(rsample::assessment(.x)))
       return(g)
     })
-    ) %>% #furrr::future_  #, .progress = F
+    ) %>%
     dplyr::mutate(
       preds = purrr::map(models, ~.x$preds),
       metrics = purrr::map(models, ~ as.list(.x$metrics))
@@ -206,7 +220,7 @@ fit_tcv <- function(rsample, rec, params, task, backend){
       g$predict(new_data = dplyr::bind_rows(rsample::assessment(.x)$data))
       return(g)
     })
-    ) %>% #furrr::future_  #, .progress = F
+    ) %>% 
     dplyr::mutate(
       preds = purrr::map(models, ~.x$preds),
       metrics = purrr::map(models, ~.x$metrics)

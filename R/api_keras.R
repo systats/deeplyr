@@ -70,30 +70,26 @@ fit_keras <- function(self){
    
    ### define objective/loss
    if(self$meta$task == "linear") {
-      
-     print("linear")
       if(is.null(self$params$output_dim)) self$params$output_dim <- 1
       if(is.null(self$params$output_fun)) self$params$output_fun <- "linear"
       if(is.null(self$params$loss)) self$params$loss <- "mse"
       if(is.null(self$params$metrics)) self$params$metrics <- "mean_squared_error"
-      if(is.null(self$params$optimizer)) self$params$optimizer <- "adam" #optimizer_rmsprop(),
-      
-   } else if(self$meta$task == "binary") {
-     print("binary")
+      if(is.null(self$params$optimizer)) self$params$optimizer <- "adam"
+   }
+   if(self$meta$task == "binary") {
       if(is.null(self$params$output_dim)) self$params$output_dim <- 1
       if(is.null(self$params$output_fun)) self$params$output_fun <- "sigmoid"
       if(is.null(self$params$loss)) self$params$loss <- "binary_crossentropy"
       if(is.null(self$params$metrics)) self$params$metrics <- "accuracy"
       if(is.null(self$params$optimizer)) self$params$optimizer <- "adam"
       
-   } else if(self$meta$task == "multi") {
-     print("multi")
+   }
+   if(self$meta$task == "multi") {
       if(is.null(self$params$output_dim)) self$params$output_dim <- length(unique(self$process$juice_y())) #1#ncol(self$data$train$y)
       if(is.null(self$params$output_fun)) self$params$output_fun <- "softmax"
       if(is.null(self$params$loss)) self$params$loss <- "sparse_categorical_crossentropy"
       if(is.null(self$params$metrics)) self$params$metrics <- "accuracy"
       if(is.null(self$params$optimizer)) self$params$optimizer <- "adam"
-      
    }
    
    if(is.null(self$params$input_dim)) self$params$input_dim <- ncol(self$process$juice_x())
@@ -131,9 +127,9 @@ fit_keras <- function(self){
 
    model <- do.call(self$params$model[[1]], model_params) %>%
       keras::compile(
-         loss = self$params$loss,
-         metric = self$params$metric,
-         optimizer = self$params$optimizer
+         loss = self$params[["loss"]],
+         metric = self$params[["metric"]],
+         optimizer = self$params[["optimizer"]]
       )
    
    x_train <- self$process$juice_x_matrix()

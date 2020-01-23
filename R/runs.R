@@ -43,7 +43,7 @@ load_metrics <- function(path) dplyr::bind_cols(jsonlite::fromJSON(glue::glue("{
 
 #' load_cv
 #' @export 
-load_cv <- function(path) dplyr::bind_rows(jsonlite::fromJSON(glue::glue("{path}/cv_metrics.json")))
+load_cv <- function(path) jsonlite::fromJSON(glue::glue("{path}/cv_metrics.json"))
 
 #' load_evals
 #load_evals <- function(path) get(load(glue::glue("{path}/evals.Rdata")))

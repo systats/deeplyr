@@ -48,11 +48,11 @@ get_params = function(model, params){
 
 #' comp_params
 #' @export  
-comp_params = function(params1, params2){
-   not_included <- params2[!(names(params2) %in% names(params1))]
-   out <- params1 %>%
+comp_params = function(p1, p2){
+   not_included <- p2[!(names(p2) %in% names(p1))]
+   out <- p1 %>%
       imap(~{
-         if(.y %in% names(params2)){
+         if(.y %in% names(p2)){
             .x <-  params2[[.y]]
          }
          return(.x)
@@ -65,8 +65,6 @@ comp_params = function(params1, params2){
 #' fit_keras
 #' @export
 fit_keras <- function(self){
-   
-   #keras::use_session_with_seed(seed = 42)
    
    ### define objective/loss
    if(self$meta$task == "linear") {

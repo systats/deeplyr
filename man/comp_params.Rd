@@ -4,7 +4,7 @@
 \alias{comp_params}
 \title{comp_params}
 \usage{
-comp_params(params1, params2)
+comp_params(p1, p2)
 }
 \description{
 comp_params

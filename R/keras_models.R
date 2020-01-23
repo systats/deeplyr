@@ -1,88 +1,3 @@
-#' list_keras_models
-#'
-#' @export
-
-list_keras_models <- function(name = ""){
-  
-  m <-  list(
-    dplyr::tibble(
-      name = "simple_mlp",
-      model = list(deeplyr::keras_simple_mlp),
-      param = list(formals(deeplyr::keras_simple_mlp))
-    ),
-    dplyr::tibble(
-      name = "deep_mlp",
-      model = list(deeplyr::keras_deep_mlp),
-      param = list(formals(deeplyr::keras_deep_mlp))
-    ),
-    dplyr::tibble(
-      name = "lstm",
-      model = list(deeplyr::keras_lstm),
-      param = list(formals(deeplyr::keras_lstm))
-    ),
-    dplyr::tibble(
-      name = "bi_lstm",
-      model = list(deeplyr::keras_bi_lstm),
-      param = list(formals(deeplyr::keras_bi_lstm))
-    ),
-    dplyr::tibble(
-      name = "deep_lstm",
-      model = list(deeplyr::keras_deep_lstm),
-      param = list(formals(deeplyr::keras_deep_lstm))
-    ),
-    dplyr::tibble(
-      name = "deep_bi_lstm",
-      model = list(deeplyr::keras_deep_bi_lstm),
-      param = list(formals(deeplyr::keras_deep_bi_lstm))
-    ),
-    dplyr::tibble(
-      name = "gru",
-      model = list(deeplyr::keras_gru),
-      param = list(formals(deeplyr::keras_gru))
-    ),
-    dplyr::tibble(
-      name = "bi_gru",
-      model = list(deeplyr::keras_bi_gru),
-      param = list(formals(deeplyr::keras_bi_gru))
-    ),
-    dplyr::tibble(
-      name = "cnn_gru",
-      model = list(deeplyr::keras_cnn_gru),
-      param = list(formals(deeplyr::keras_cnn_gru))
-    ),
-    dplyr::tibble(
-      name = "cnn_lstm",
-      model = list(deeplyr::keras_cnn_lstm),
-      param = list(formals(deeplyr::keras_cnn_lstm))
-    ),
-    dplyr::tibble(
-      name = "gru_cnn",
-      model = list(deeplyr::keras_gru_cnn),
-      param = list(formals(deeplyr::keras_gru_cnn))
-    ),
-    dplyr::tibble(
-      name = "multi_cnn",
-      model = list(deeplyr::keras_multi_cnn),
-      param = list(formals(deeplyr::keras_multi_cnn))
-    ),
-    dplyr::tibble(
-      name = "sep_cnn",
-      model = list(deeplyr::keras_sep_cnn),
-      param = list(formals(deeplyr::keras_sep_cnn))
-    )
-  ) %>% 
-    dplyr::bind_rows() %>% 
-    dplyr::mutate(backend = "keras")
-  
-  if(name == "") return(m)
-  
-  
-  mname <- name
-  m %>% filter(name == mname)
-  
-}
-
-
 #' keras simple mlp
 #'
 #' Word Embedding + Simple Multilayer Perceptron 
@@ -114,7 +29,7 @@ keras_simple_mlp <- function(
   
   if(is.null(embed_vectors)){
     #print("no vectors")
-    model %<>%
+    model <- model %>%
       keras::layer_embedding(
         input_dim = input_dim,
         output_dim = embed_dim,
@@ -122,7 +37,7 @@ keras_simple_mlp <- function(
       )
   } else {
     #print("with vectors")
-    model %<>% 
+    model <- model %>% 
       layer_embedding(
         input_dim = input_dim,
         output_dim = embed_dim,
@@ -134,13 +49,13 @@ keras_simple_mlp <- function(
   
   # the 3D tensor of embeddings gets falttened into a 2D tensor of shape `(samples, maxlen * output_dim)
   if(pooling == 'global_average'){
-    model %<>% keras::layer_global_average_pooling_1d() 
+    model <- model %>% keras::layer_global_average_pooling_1d() 
     #} else if(pooling == 'average'){
-    # model %<>% keras::layer_average_pooling_1d(pool_size = ) 
+    # model <- model %>% keras::layer_average_pooling_1d(pool_size = ) 
   } else {
-    model %<>% keras::layer_flatten()
+    model <- model %>% keras::layer_flatten()
   } 
-  model %<>% 
+  model <- model %>% 
     keras::layer_dense(units = dense_dim, activation = dense_fun) %>% 
     keras::layer_dropout(rate = dropout) %>% 
     keras::layer_dense(units = output_dim, activation = output_fun)
@@ -174,9 +89,9 @@ keras_deep_mlp <- function(
     keras::layer_embedding(input_dim = input_dim, output_dim = embed_dim, input_length = seq_len) %>%
     keras::layer_flatten()
   
-  1:length(hidden_dims) %>% walk(~ model %<>% keras::layer_dense(units = hidden_dims[.x], activation = hidden_fun))
+  1:length(hidden_dims) %>% walk(~ model <- model %>% keras::layer_dense(units = hidden_dims[.x], activation = hidden_fun))
   
-  model %<>% keras::layer_dense(units = output_dim, activation = output_fun)
+  model <- model %>% keras::layer_dense(units = output_dim, activation = output_fun)
   
   return(model)
 }
@@ -282,7 +197,7 @@ keras_deep_lstm <- function(
   # for(layer in 1:length(hidden_dims))
   1:length(hidden_dims) %>% 
     walk(~{
-      model %<>% 
+      model <- model %>% 
         keras::layer_lstm(
           units =  hidden_dims[.x], 
           dropout = .2, 
@@ -291,7 +206,7 @@ keras_deep_lstm <- function(
         )
     })
   
-  model %<>% 
+  model <- model %>% 
     keras::layer_flatten() %>% 
     keras::layer_dense(units = output_dim, activation = output_fun)
   
@@ -333,7 +248,7 @@ keras_deep_bi_lstm <- function(
   # for(layer in 1:length(hidden_dims))
   1:length(hidden_dims) %>% 
     purrr::walk(~{
-      model %<>% 
+      model <- model %>% 
         keras::bidirectional(
           layer_lstm(
             units =  hidden_dims[.x], 
@@ -344,7 +259,7 @@ keras_deep_bi_lstm <- function(
         )
     })
   
-  model %<>% 
+  model <- model %>% 
     keras::layer_flatten() %>% 
     keras::layer_dense(units = output_dim, activation = output_fun)
   
@@ -396,11 +311,11 @@ keras_cnn_gru <- function(
     keras::layer_max_pooling_1d(pool_size)
   
   if(bidirectional){
-    model %<>% keras::bidirectional(
+    model <- model %>% keras::bidirectional(
       keras::layer_gru(units = gru_dim, dropout = .2, recurrent_dropout = gru_drop)
     )
   } else {
-    model %<>% keras::layer_gru(units = gru_dim, dropout = .2, recurrent_dropout = gru_drop)
+    model <- model %>% keras::layer_gru(units = gru_dim, dropout = .2, recurrent_dropout = gru_drop)
   }
   
   model <- model %>%
@@ -453,14 +368,14 @@ keras_cnn_lstm <- function(
     keras::layer_max_pooling_1d(pool_size)
   
   if(bidirectional){
-    model %<>% keras::bidirectional(
+    model <- model %>% keras::bidirectional(
       keras::layer_lstm(units = lstm_dim, dropout = dropout, recurrent_dropout = lstm_drop)
     )
   } else {
-    model %<>% keras::layer_lstm(units = lstm_dim, dropout = dropout, recurrent_dropout = lstm_drop)
+    model <- model %>% keras::layer_lstm(units = lstm_dim, dropout = dropout, recurrent_dropout = lstm_drop)
   }
   
-  model %<>% keras::layer_dense(units = output_dim, activation = output_fun) 
+  model <- model %>% keras::layer_dense(units = output_dim, activation = output_fun) 
   
   return(model)
 }
@@ -721,7 +636,7 @@ keras_sep_cnn <- function(
   
   if(is.null(embed_vectors)){
     #print("no vectors")
-    model %<>%
+    model <- model %>%
       keras::layer_embedding(
         input_dim = input_dim,
         output_dim = embed_dim,
@@ -729,7 +644,7 @@ keras_sep_cnn <- function(
       )
   } else {
     #print("with vectors")
-    model %<>% 
+    model <- model %>% 
       layer_embedding(
         input_dim = input_dim,
         output_dim = embed_dim,
@@ -739,7 +654,7 @@ keras_sep_cnn <- function(
       )
   }
   
-  model %<>% 
+  model <- model %>% 
     keras::layer_dropout(.2) %>% 
     keras::layer_separable_conv_1d(filters = n_filters, kernel_size = 3, activation = "relu") %>% 
     #keras::layer_separable_conv_1d(filters = n_filters, kernel_size = 3, activation = "relu") %>% 
@@ -748,12 +663,102 @@ keras_sep_cnn <- function(
   
   # # the 3D tensor of embeddings gets falttened into a 2D tensor of shape `(samples, maxlen * output_dim)
   # if(pooling == 'global_average'){
-  #   model %<>% keras::layer_global_average_pooling_1d() 
+  #   model <- model %>% keras::layer_global_average_pooling_1d() 
   #   #} else if(pooling == 'average'){
-  #   # model %<>% keras::layer_average_pooling_1d(pool_size = ) 
+  #   # model <- model %>% keras::layer_average_pooling_1d(pool_size = ) 
   # } else {
-  #   model %<>% keras::layer_flatten()
+  #   model <- model %>% keras::layer_flatten()
   # } 
   
+  return(model)
+}
+
+
+
+#' keras_cudnn_lstm 
+#'
+#' Word embedding + long short-term memory + GPU
+#'
+#' @param input_dim Number of unique vocabluary/tokens
+#' @param embed_dim Number of word vectors
+#' @param seq_len Length of the input sequences
+#' @param lstm_dim Number of recurrent neurons (default 64)
+#' @param lstm_drop Recurrent dropout ratio 
+#' @param output_dim Number of neurons of the output layer
+#' @param output_fun Output activation function
+#' @return keras model
+#' 
+#' @export
+
+keras_cudnn_lstm <- function(
+  input_dim, embed_dim = 128, seq_len = 50, filter_size = 5, 
+  n_filters = 100, pool_size = 4, lstm_dim = 64, #lstm_drop = 0.2, 
+  bidirectional = F, dropout = 0.2, output_dim = 1, output_fun = "sigmoid"
+){
+  
+  model <- keras::keras_model_sequential() %>% 
+    keras::layer_embedding(
+      input_dim = input_dim, 
+      output_dim = embed_dim, 
+      input_length = seq_len
+    )
+  
+  if (bidirectional) {
+    model <- model %>% keras::bidirectional(keras::layer_cudnn_lstm(units = lstm_dim))
+  }
+  else {
+    model <- model %>% keras::layer_cudnn_lstm(units = lstm_dim)
+  }
+  model <- model %>% keras::layer_dense(units = output_dim, activation = output_fun)
+  return(model)
+}
+
+#' keras_cudnn_cnn_lstm
+#'
+#' Word embedding + 1D pooled convolution + lstm layer + GPU
+#'
+#' @param input_dim Number of unique vocabluary/tokens
+#' @param embed_dim Number of word vectors
+#' @param seq_len Length of the input sequences
+#' @param n_filters the number of convolutional filters 
+#' @param filter_size the window size (kernel_size)
+#' @param pool_size pooling dimension (filters)
+#' @param lstm_dim Number of lstm neurons (default 32)
+#' @param lstm_drop default is 2
+#' @param bidirectional default is F
+#' @param output_dim Number of neurons of the output layer
+#' @param output_fun Output activation function
+#' @return keras model
+#' 
+#' @export
+
+keras_cudnn_cnn_lstm <- function (
+  input_dim, embed_dim = 128, seq_len = 50, filter_size = 5,
+  n_filters = 100, pool_size = 4, lstm_dim = 64, #lstm_drop = 0.2,
+  bidirectional = F, dropout = 0.2, output_dim = 1, output_fun = "sigmoid"
+  ){
+  
+  model <- keras::keras_model_sequential() %>%
+    keras::layer_embedding(
+      input_dim = input_dim,
+      output_dim = embed_dim, 
+      input_length = seq_len
+    ) %>%
+    keras::layer_conv_1d(
+      n_filters,
+      filter_size, 
+      padding = "valid", 
+      activation = "relu",
+      strides = 1
+    ) %>%
+    keras::layer_max_pooling_1d(pool_size)
+  
+  if (bidirectional) {
+    model <- model %>% keras::bidirectional(keras::layer_cudnn_lstm(units = lstm_dim))
+  }
+  else {
+    model <- model %>% keras::layer_cudnn_lstm(units = lstm_dim)
+  }
+  model <- model %>% keras::layer_dense(units = output_dim, activation = output_fun)
   return(model)
 }

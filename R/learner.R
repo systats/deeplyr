@@ -168,26 +168,28 @@ vfold_cv_oob <- function(data, v, split){
 fit_cv <- function(rsample, rec, params, task, backend, path = NULL){
   
   out <- rsample %>%
-    dplyr::mutate(models = map(splits, ~{
-      g <- deeplyr::fit_learner(
-        rec, dplyr::bind_rows(rsample::analysis(.x)), 
-        params, task, backend
-      )
-      g$predict(dplyr::bind_rows(rsample::assessment(.x)))
-      return(g)
-    })
+    dplyr::mutate(
+      models = map(splits, ~{
+        g <- deeplyr::fit_learner(
+          rec, dplyr::bind_rows(rsample::analysis(.x)), 
+          params, task, backend
+        )
+        g$predict(dplyr::bind_rows(rsample::assessment(.x)))
+        return(g)
+      })
     ) %>%
     dplyr::mutate(
       preds = purrr::map(models, ~.x$preds),
       metrics = purrr::map(models, ~ as.list(.x$metrics))
     )
   
-  if(is.null(path)) return(out)
-  out$metrics %>% dplyr::bind_rows() %>% save_json(., name = "cv_metrics", path = path)
-  out %>% dplyr::select(id, preds) %>% save_rds(., name = "cv_preds", path = path)
+  if(!is.null(path)){
+    out$metrics %>% dplyr::bind_rows() %>% save_json(., name = "cv_metrics", path = path)
+    out %>% dplyr::select(id, preds) %>% save_rds(., name = "cv_preds", path = path)
+  }
+  
+  return(out)
 }
-
-
 
 #' future_fit_cv
 #' @export

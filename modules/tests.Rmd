@@ -296,3 +296,57 @@ m$imps
 nn <- mlgraph::eval_classifier(m$preds, am, path = ".")
 evals
 ```
+
+
+
+```{r}
+pacman::p_load(tidyverse)
+d <- tibble(x = runif(100, 0, 10), y = 1 + x + rnorm(100), split = sample(1:5, size = 100, replace = T))
+```
+
+```{r}
+rsample::vfold_cv(d, 2)
+```
+
+
+```{r}
+# rsample::vfold_cv(data = d, v = 2)
+# folds <- 1:v
+# idx <- seq_len(nrow(d))
+# indices <- split(idx, folds)
+
+devtools::document()
+devtools::load_all()
+vfold_cv_oob <- function(data, v, split){
+  idx <- tibble(rid = 1:nrow(data), split = split)
+  indices <- 1:5 %>% purrr::map(~{idx$rid[idx$split == .x]})
+  indices <- indices %>% purrr::map(rsample:::vfold_complement, n = nrow(idx))
+  split_objs <- purrr::map(indices, rsample:::make_splits, data = data, class = "vfold_split")
+  tibble::tibble(splits = split_objs, id = paste0("Fold", 1:length(split_objs)))
+}
+
+c <- vfold_cv_oob(d, 5, d$split)
+c
+
+rsample::analysis(c$splits[[1]])$split %>% unique() %>% sort
+rsample::analysis(c$splits[[2]])$split %>% unique() %>% sort
+rsample::analysis(c$splits[[3]])$split %>% unique() %>% sort
+rsample::analysis(c$splits[[4]])$split %>% unique() %>% sort
+rsample::analysis(c$splits[[5]])$split %>% unique() %>% sort
+```
+
+
+
+```{r}
+load_cv(".")
+```
+
+
+
+* dict but bow?
+* sanctity?
+moralspeech.shinyapps.io/skipgram
+
+
+
+

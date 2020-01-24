@@ -1,7 +1,13 @@
+#' from_gpu_cpu
+#' @export
+from_gpu_cpu <- function(model, path){
+   model$load_weights(filepath = glue::glue("{path}/model"))
+   keras::save_model_hdf5(model, glue::glue("{path}/model"), overwrite = T)
+}
+
 #' class_weight
 #' @export
 class_weight = function(y){
-   
    y %>%
       tibble(var = .) %>%
       count(var) %>%
@@ -9,7 +15,6 @@ class_weight = function(y){
       pull(n) %>%
       as.list %>%
       set_names(c("0", "1"))
-   
 }
 
 #' class_weights
@@ -29,7 +34,6 @@ class_weights = function(ymat){
          return(out)
       }) %>%
       c(list(`0` = 1), .)
-   
 }
  
 #' get_params

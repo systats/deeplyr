@@ -762,3 +762,128 @@ keras_cudnn_cnn_lstm <- function (
   model <- model %>% keras::layer_dense(units = output_dim, activation = output_fun)
   return(model)
 }
+
+
+
+#' keras_char_cnn_zhang
+#'
+#' Character Level Convolutional Neural Network for Text Classification, as described in Zhang et al., 2015 (http://arxiv.org/abs/1509.01626)
+#' https://github.com/mhjabreel/CharCnn_Keras/blob/master/models/char_cnn_zhang.py
+#' 
+#' @param input_dim Number of unique vocabluary/tokens
+#' @param embed_dim Number of word vectors
+#' @param seq_len Length of the input sequences
+#' @param conv_layers number of filters by layer
+#' @param filter_size the window size (kernel_size)
+#' @param pool_size pooling dimension (filters)
+#' @param dens_layers Number of neurons by dense layer
+#' @param dropout a scalar between 0 and .5
+#' @param output_dim Number of neurons of the output layer
+#' @param output_fun Output activation function
+#' @return keras model
+#' 
+#' @export
+keras_char_cnn_zhang <- function (
+  input_dim, embed_dim = 128, seq_len = 50, filter_size = 5, conv_layers = c(100, 60, 30), 
+  pool_size = 4, dens_layers = c(50, 30, 10), dropout = .2, output_dim = 1, output_fun = "sigmoid"
+){
+  
+  model <- keras::keras_model_sequential() %>%
+    keras::layer_embedding(
+      input_dim = input_dim + 1,
+      output_dim = embed_dim, 
+      input_length = seq_len
+    )
+  
+  # Convolution layers
+  for(conv in conv_layers){
+    model <- model %>% 
+      keras::layer_conv_1d(
+        conv,
+        filter_size, 
+        padding = "valid", 
+        activation = "relu",
+        strides = 1
+      ) %>%
+      keras::layer_max_pooling_1d()
+  }
+  
+  model <- model %>% keras::layer_flatten()
+  
+  # Fully connected layers
+  for(dens in dens_layers){
+    model <- model %>% 
+      keras::layer_dense(units = dens, activation = "relu") %>%
+      keras::layer_dropout(dropout)
+  }
+
+  model <- model %>% keras::layer_dense(units = output_dim, activation = output_fun)
+  return(model)
+}
+
+
+
+#' keras_char_cnn_kim
+#'
+#' Character Level Convolutional Neural Network as described in Kim et al., 2015 (https://arxiv.org/abs/1508.06615)
+#' https://github.com/mhjabreel/CharCnn_Keras/blob/master/models/char_cnn_kim.py
+#' 
+#' @param input_dim Number of unique vocabluary/tokens
+#' @param embed_dim Number of word vectors
+#' @param seq_len Length of the input sequences
+#' @param conv_layers number of filters by layer
+#' @param filter_size the window size (kernel_size)
+#' @param pool_size pooling dimension (filters)
+#' @param dens_layers Number of neurons by dense layer
+#' @param dropout a scalar between 0 and .5
+#' @param output_dim Number of neurons of the output layer
+#' @param output_fun Output activation function
+#' @return keras model
+#' 
+#' @export
+keras_char_cnn_kim <- function (
+  input_dim, embed_dim = 128, seq_len = 50, filter_sizes = c(5, 4, 4), conv_layers = c(100, 60, 30), 
+  pool_size = 2, dens_layers = c(50, 30, 10), dropout = .2, output_dim = 1, output_fun = "sigmoid"
+){
+  
+  inp <- keras::layer_input(shape = seq_len) 
+  
+  embedd <- inp %>%
+    keras::layer_embedding(
+      input_dim = input_dim + 1,
+      output_dim = embed_dim, 
+      input_length = seq_len
+    )
+  
+  # Convolution layers
+  convs <- list()
+  for(jj in 1:length(conv_layers)){
+    convs[[jj]] <- embedd %>% 
+      keras::layer_conv_1d(
+        conv_layers[jj],
+        filter_sizes[jj], 
+        padding = "valid", 
+        activation='tanh',
+        strides = 1
+      ) %>%
+      keras::layer_max_pooling_1d(pool_size)
+  }
+  
+  block <- keras::layer_concatenate(convs)
+  
+  # Fully connected layers
+  for(dens in dens_layers){
+    block <- block %>% 
+      keras::layer_dense(units = dens, activation = "selu", kernel_initializer='lecun_normal') %>%
+      keras::layer_alpha_dropout(dropout)
+  }
+  
+  out <- block %>% keras::layer_dense(units = output_dim, activation = output_fun)
+  
+  model <- keras::keras_model(inp, out)
+  return(model)
+}
+
+
+
+

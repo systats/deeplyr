@@ -5,7 +5,7 @@
 \title{fit_tokenizer}
 \usage{
 fit_tokenizer(text, max_words = 10000, max_docs = 0.5, min_word = 3,
-  char_level = F, path = NULL)
+  char_level = F, path = NULL, ...)
 }
 \description{
 fit_tokenizer

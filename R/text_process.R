@@ -1,6 +1,6 @@
 #' fit_tokenizer
 #' @export
-fit_tokenizer <- function(text, max_words = 10000, max_docs = .5, min_word = 3, char_level = F, path = NULL){
+fit_tokenizer <- function(text, max_words = 10000, max_docs = .5, min_word = 3, char_level = F, path = NULL, ...){
   
   vocab <- text2vec::itoken(text, progressbar = F) %>%
     text2vec::create_vocabulary(.) %>%
@@ -13,7 +13,7 @@ fit_tokenizer <- function(text, max_words = 10000, max_docs = .5, min_word = 3, 
   tok <- keras::text_tokenizer(
     num_words = max_words,
     lower = T,
-    char_level = char_level
+    char_level = char_level, ...
   )
   
   keras::fit_text_tokenizer(tok, vocab$term)

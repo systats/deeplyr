@@ -52,10 +52,15 @@ predict_h2o <- function(self, new_data){
 fit_h2o_glm <- function(self){
   
   ### define objective
-  if(self$meta$task == "linear") self$params$family <- "gaussian"
-  if(self$meta$task == "binary") self$params$family <- "binomial"
-  if(self$meta$task == "multi") self$params$family <- "multinomial"
-  if(self$meta$task == "ordinal") self$params$family <- "ordinal"
+  if(self$meta$task == "linear"){
+    if(is.null(self$params$family)) self$params$family <- "gaussian"
+  } 
+  if(self$meta$task == "binary"){
+    if(is.null(self$params$family)) self$params$family <- "binomial"
+  } 
+  if(self$meta$task == "multi"){
+    if(is.null(self$params$family)) self$params$family <- "multinomial"
+  }
   
   # "gaussian", "binomial", "quasibinomial", "ordinal", "multinomial", 
   # "poisson", "gamma", "tweedie", "negativebinomial"

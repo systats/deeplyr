@@ -51,7 +51,7 @@ fit_xgboost <- function(self){
       nthread = self$params$nthread, 
       missing = NA, 
       # early_stopping_rounds = 3,
-      verbose = T
+      verbose = 1
    )
    
    return(model)

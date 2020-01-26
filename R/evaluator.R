@@ -22,6 +22,22 @@ compute_metrics <- function(metrics, actual, pred){
     purrr::map_dfc(~mean(.x(actual, pred)))
 }
 
+#' mean_pred
+#' @export
+mean_pred <- function(x, y) mean(y)
+
+#' mean_actual
+#' @export
+mean_actual <- function(x, y) mean(x)
+
+#' sd_pred
+#' @export
+sd_pred <- function(x, y) stats::sd(y)
+
+#' sd_actual
+#' @export
+sd_actual <- function(x, y) stats::sd(x)
+
 #' eval_linear
 #' @export
 eval_linear <- function(preds, y){
@@ -29,7 +45,11 @@ eval_linear <- function(preds, y){
     mse = Metrics::mse,
     rmse = Metrics::rmse,
     mae = Metrics::mae,
-    mape = Metrics::mape
+    mape = Metrics::mape,
+    mean = mean_pred, 
+    mean_actual = mean_actual,
+    sd = sd_pred,
+    sd_actual = sd_actual
     # se = Metrics::se,
     # ae = Metrics::ae,
     # ape = Metrics::ape,
@@ -53,7 +73,11 @@ eval_binary <- function(preds, y){
     recall = Metrics::recall,
     fbeta_score = Metrics::fbeta_score,
     ce = Metrics::ce,
-    f1 = Metrics::f1
+    f1 = Metrics::f1,
+    mean = mean_pred, 
+    mean_actual = mean_actual,
+    sd = sd_pred,
+    sd_actual = sd_actual
   ) %>%
     compute_metrics(as.numeric(as.character(preds[[y]])), as.numeric(as.character(preds$pred)))
   
@@ -88,6 +112,7 @@ rank_prob_score <- function(target, probs){
   return(rps)
 }
 
+
 #' eval_multi
 #' @export
 eval_multi <- function(preds, y){
@@ -97,7 +122,11 @@ eval_multi <- function(preds, y){
     recall = Metrics::recall,
     fbeta_score = Metrics::fbeta_score,
     ce = Metrics::ce,
-    f1 = Metrics::f1
+    mean = mean_pred, 
+    mean_actual = mean_actual,
+    sd = sd_pred,
+    sd_actual = sd_actual
+    #f1 = Metrics::f1
   ) %>%
     compute_metrics(as.numeric(as.character(preds[[y]])), as.numeric(as.character(preds$pred)))
   

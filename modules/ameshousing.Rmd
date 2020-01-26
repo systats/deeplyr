@@ -26,10 +26,20 @@ sp <- rsample::initial_split(d)
 train <- training(sp)
 test <- testing(sp)
 
-
 #hist(train$sale_price)
 rec <- recipes::recipe(sale_price ~ neighborhood + yr_sold + lot_area, data = head(train, 2000))
 ```
+
+```{r}
+f <- fit_learner(rec, train, list(), "linear", "xgboost")
+f$predict(test)
+f$metrics
+```
+
+
+
+
+
 
 
 ```{r}

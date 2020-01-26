@@ -31,9 +31,10 @@ rec <- recipes::recipe(sale_price ~ neighborhood + yr_sold + lot_area, data = he
 ```
 
 ```{r}
-f <- fit_learner(rec, train, list(), "linear", "xgboost")
+f <- deeplyr::fit_learner(rec, train, list(), "linear", "xgboost")
 f$predict(test)
 f$metrics
+f$meta
 ```
 
 

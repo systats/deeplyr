@@ -53,7 +53,6 @@ learner <- R6::R6Class(
       
       ### freeze training data + pre-processing steps
       self$process$bake(x, y)
-
       start <- Sys.time()
 
       self$model <- private$model_fit(self)
@@ -62,9 +61,14 @@ learner <- R6::R6Class(
 
       ### if avaible: feature importane
       if(!is.null(private$model_imp)) self$imps <- private$model_imp(self)
+      self$meta$outcome <- self$process$ask_y()
+      self$meta$n_features <- ncol(self$process$juice_x())
+      self$meta$n_train <- nrow(self$process$juice())
     },
     
     predict = function(new_data, dev = F){
+      
+      self$meta$n_test <- nrow(new_data)
       
       self$preds <- private$model_predict(self, new_data) 
       if(dev) return(self$preds)

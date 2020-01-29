@@ -98,7 +98,7 @@ init_parent <- function(parent){
   ### initalize parent
   if(nrow(par) == 0){
     num <- stringr::str_pad((nrow(list_parents()) + 1), width = 2, side = "left", pad = "0")
-    dir.create(glue::glue("models/{nrow(list_parents())+1}_{parent}"))
+    dir.create(glue::glue("models/{num}_{parent}"))
     par <- filter_parent(parent)
   }
   

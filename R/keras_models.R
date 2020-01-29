@@ -32,7 +32,7 @@ keras_simple_mlp <- function(
     model <- model %>%
       keras::layer_embedding(
         input_dim = input_dim,
-        output_dim = embed_dim,
+        output_dim = embed_dim + 1,
         input_length = seq_len
       )
   } else {
@@ -40,7 +40,7 @@ keras_simple_mlp <- function(
     model <- model %>% 
       layer_embedding(
         input_dim = input_dim,
-        output_dim = embed_dim,
+        output_dim = embed_dim + 1,
         weights = embed_vectors,
         input_length = seq_len,
         trainable = F
@@ -86,7 +86,7 @@ keras_deep_mlp <- function(
 ){
   
   model <- keras::keras_model_sequential() %>% 
-    keras::layer_embedding(input_dim = input_dim, output_dim = embed_dim, input_length = seq_len) %>%
+    keras::layer_embedding(input_dim = input_dim, output_dim = embed_dim + 1, input_length = seq_len) %>%
     keras::layer_flatten()
   
   1:length(hidden_dims) %>% walk(~ model <- model %>% keras::layer_dense(units = hidden_dims[.x], activation = hidden_fun))
@@ -121,7 +121,7 @@ keras_lstm <- function(
   model <- keras::keras_model_sequential() %>%
     keras::layer_embedding(
       input_dim = input_dim, 
-      output_dim = embed_dim, 
+      output_dim = embed_dim + 1, 
       input_length = seq_len
     ) %>% 
     keras::layer_lstm(units = lstm_dim, dropout = dropout, recurrent_dropout = lstm_drop) %>%
@@ -155,7 +155,7 @@ keras_bi_lstm <- function(
   model <- keras::keras_model_sequential() %>%
     keras::layer_embedding(
       input_dim = input_dim, 
-      output_dim = embed_dim, 
+      output_dim = embed_dim + 1, 
       input_length = seq_len
     ) %>% 
     keras::bidirectional(keras::layer_lstm(units = lstm_dim, dropout = dropout, recurrent_dropout = lstm_drop)) %>%
@@ -189,7 +189,7 @@ keras_deep_lstm <- function(
   model <- keras::keras_model_sequential() %>%
     keras::layer_embedding(
       input_dim = input_dim, 
-      output_dim = embed_dim, 
+      output_dim = embed_dim + 1, 
       input_length = seq_len
     )
   
@@ -240,7 +240,7 @@ keras_deep_bi_lstm <- function(
   model <- keras::keras_model_sequential() %>%
     keras::layer_embedding(
       input_dim = input_dim, 
-      output_dim = embed_dim, 
+      output_dim = embed_dim + 1, 
       input_length = seq_len
     )
   
@@ -297,7 +297,7 @@ keras_cnn_gru <- function(
   model <- keras::keras_model_sequential() %>%
     keras::layer_embedding(
       input_dim = input_dim, 
-      output_dim = embed_dim, 
+      output_dim = embed_dim + 1, 
       input_length = seq_len
     ) %>%
     #layer_dropout(0.25) %>%
@@ -354,7 +354,7 @@ keras_cnn_lstm <- function(
   model <- keras::keras_model_sequential() %>%
     keras::layer_embedding(
       input_dim = input_dim, 
-      output_dim = embed_dim, 
+      output_dim = embed_dim + 1, 
       input_length = seq_len
     ) %>%
     #layer_dropout(0.25) %>%
@@ -411,7 +411,7 @@ keras_gru_cnn <- function(
   embedding <- input %>%
     keras::layer_embedding(
       input_dim = input_dim, 
-      output_dim = embed_dim
+      output_dim = embed_dim + 1
       #input_length = seq_len
     ) %>%
     keras::layer_spatial_dropout_1d(rate = .1)
@@ -465,7 +465,7 @@ keras_gru <- function(
   block <- input %>%
     keras::layer_embedding(
       input_dim = input_dim, 
-      output_dim = embed_dim 
+      output_dim = embed_dim + 1
       #input_length = maxlen
     ) %>% 
     keras::layer_spatial_dropout_1d(0.2) %>% 
@@ -514,7 +514,7 @@ keras_bi_gru <- function(
   block <- input %>%
     keras::layer_embedding(
       input_dim = input_dim, 
-      output_dim = embed_dim 
+      output_dim = embed_dim + 1
       #input_length = maxlen
     ) %>% 
     keras::layer_spatial_dropout_1d(0.2) %>% 
@@ -558,11 +558,11 @@ keras_multi_cnn <- function(
   embedding<- inputs %>%
     keras::layer_embedding(
       input_dim = input_dim, 
-      output_dim = embed_dim
+      output_dim = embed_dim + 1
       #input_length = seq_len
     ) %>% 
     #layer_spatial_dropout_1d(0.2) %>% 
-    keras::layer_reshape(list(seq_len, embed_dim, 1))
+    keras::layer_reshape(list(seq_len, embed_dim + 1, 1))
   
   block1 <- embedding %>% 
     keras::layer_conv_2d(
@@ -639,7 +639,7 @@ keras_sep_cnn <- function(
     model <- model %>%
       keras::layer_embedding(
         input_dim = input_dim,
-        output_dim = embed_dim,
+        output_dim = embed_dim + 1,
         input_length = seq_len
       )
   } else {
@@ -647,7 +647,7 @@ keras_sep_cnn <- function(
     model <- model %>% 
       layer_embedding(
         input_dim = input_dim,
-        output_dim = embed_dim,
+        output_dim = embed_dim + 1,
         weights = embed_vectors,
         input_length = seq_len,
         trainable = F
@@ -699,7 +699,7 @@ keras_cudnn_lstm <- function(
   model <- keras::keras_model_sequential() %>% 
     keras::layer_embedding(
       input_dim = input_dim, 
-      output_dim = embed_dim, 
+      output_dim = embed_dim + 1, 
       input_length = seq_len
     )
   
@@ -741,7 +741,7 @@ keras_cudnn_cnn_lstm <- function (
   model <- keras::keras_model_sequential() %>%
     keras::layer_embedding(
       input_dim = input_dim,
-      output_dim = embed_dim, 
+      output_dim = embed_dim + 1, 
       input_length = seq_len
     ) %>%
     keras::layer_conv_1d(
@@ -791,7 +791,7 @@ keras_char_cnn_zhang <- function (
   model <- keras::keras_model_sequential() %>%
     keras::layer_embedding(
       input_dim = input_dim + 1,
-      output_dim = embed_dim, 
+      output_dim = embed_dim + 1, 
       input_length = seq_len
     )
   
@@ -851,7 +851,7 @@ keras_char_cnn_kim <- function (
   embedd <- inp %>%
     keras::layer_embedding(
       input_dim = input_dim + 1,
-      output_dim = embed_dim, 
+      output_dim = embed_dim + 1, 
       input_length = seq_len
     )
   

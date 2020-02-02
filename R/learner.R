@@ -113,7 +113,7 @@ learner <- R6::R6Class(
       }
     },
 
-    save = function(path = NULL, recipe = T, model = T){
+    save = function(path = NULL, recipe = T, model = T, preds = T){
       
       if(is.null(path)) path <- "."
       if(!dir.exists(path)) dir.create(path)
@@ -135,7 +135,7 @@ learner <- R6::R6Class(
       if(!is.null(self$metrics)) save_json_pos(self$metrics, "metrics", path)
       
       ### preds
-      if(!is.null(self$preds)) save_rds_pos(self$preds, "preds", path)
+      if(preds & !is.null(self$preds)) save_rds_pos(self$preds, "preds", path)
       
       ### imps
       if(!is.null(self$imps)) save_rds_pos(self$imps, "imps", path)

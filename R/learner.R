@@ -113,24 +113,23 @@ learner <- R6::R6Class(
       }
     },
 
-    save = function(path = NULL){
+    save = function(path = NULL, recipe = T, model = T){
       
       if(is.null(path)) path <- "."
       if(!dir.exists(path)) dir.create(path)
       
       ### model
       private$model_save <- purrr::possibly(private$model_save, NULL)
-      private$model_save(self$model, "model", path)
+      if(model) private$model_save(self$model, "model", path)
       
       ### meta
       if(!is.null(self$meta)) save_json_pos(self$meta, "meta", path)
       
       ### params
-      params <- self$params %>% purrr::keep(~is.numeric(.x)|is.character(.x))
-      if(!is.null(params)) save_json_pos(params, "params", path)
+      if(!is.null(self$params)) self$params %>% purrr::keep(~is.numeric(.x)|is.character(.x)) %>% save_json_pos("params", path)
 
       ### recipe
-      if(!is.null(self$process$data)) save_rds_pos(self$process$data, "process", path)
+      if(recipe  & !is.null(self$process$data)) save_rds_pos(self$process$data, "process", path)
             
       ### metrics
       if(!is.null(self$metrics)) save_json_pos(self$metrics, "metrics", path)

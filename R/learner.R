@@ -73,8 +73,9 @@ learner <- R6::R6Class(
       self$preds <- private$model_predict(self, new_data) 
       if(dev) return(self$preds)
       
-      self$preds <- self$preds%>% 
-        dplyr::bind_cols(self$process$stream_all(new_data))
+      self$preds <- self$preds %>% 
+        dplyr::bind_cols(new_data)
+        #dplyr::bind_cols(self$process$stream_all(new_data))
       
       if(self$process$ask_y() %in% colnames(dplyr::as_tibble(new_data))){
         self$metrics <- model_eval(self, self$process$ask_y())

@@ -101,9 +101,9 @@ fit_keras <- function(self){
    # define classweights by default
    if(!is.null(self$params$class_weights)){
       if(ncol(self$process$juice_y_tibble()) == 1){
-         class_weights <- class_weight()
+         class_weights <- class_weight(self$process$juice_y())
       } else {
-         class_weights <- class_weights()
+         class_weights <- class_weights(self$process$juice_y_tibble())
       }
    }
 

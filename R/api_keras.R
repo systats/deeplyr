@@ -99,15 +99,13 @@ fit_keras <- function(self){
    if(is.null(self$params$verbose)) self$params$verbose <- 1
 
    # define classweights by default
-   # if(self$meta$task != "linear"){
-   #    if(!is.null(self$params$class_weights)){
-   #       if(length(colnames(self$data$train$y)) == 0){
-   #          class_weights <- class_weight()
-   #       } else {
-   #          class_weights <- class_weights()
-   #       }
-   #    }
-   # }
+   if(!is.null(self$params$class_weights)){
+      if(length(colnames(self$data$train$y)) == 0){
+         class_weights <- class_weight()
+      } else {
+         class_weights <- class_weights()
+      }
+   }
 
    if(is.null(self$params$model)){
       

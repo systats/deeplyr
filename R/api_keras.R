@@ -101,9 +101,9 @@ fit_keras <- function(self){
    # define classweights by default
    if(!is.null(self$params$class_weights)){
       if(ncol(self$process$juice_y_tibble()) == 1){
-         class_weights <- class_weight(self$process$juice_y())
+         self$params$class_weights <- class_weight(self$process$juice_y())
       } else {
-         class_weights <- class_weights(self$process$juice_y_tibble())
+         self$params$class_weights <- class_weights(self$process$juice_y_tibble())
       }
    }
 
@@ -135,9 +135,9 @@ fit_keras <- function(self){
    x_train <- self$process$juice_x_matrix()
    y_train <- as.numeric(as.character(self$process$juice_y()))
    
-   if(self$meta$task %in% c("binary", "multi")){
-      if(min(y_train) == 1) y_train <- y_train - 1
-   }
+   # if(self$meta$task %in% c("binary", "multi")){
+   #    if(min(y_train) == 1) y_train <- y_train - 1
+   # }
    
    keras_params <- list(
       object = model,

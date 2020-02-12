@@ -29,9 +29,9 @@ fit_xgboost <- function(self){
    x_train <- self$process$juice_x_matrix()
    y_train <- as.numeric(as.character(self$process$juice_y()))
    
-   if(self$meta$task %in% c("binary", "multi")){
-     if(min(y_train) == 1) y_train <- y_train - 1
-   }
+   # if(self$meta$task %in% c("binary", "multi")){
+   #   if(min(y_train) == 1) y_train <- y_train - 1
+   # }
    
    ### set training and evaluation data
    input <- xgboost::xgb.DMatrix(
@@ -44,7 +44,7 @@ fit_xgboost <- function(self){
       imap(~{ if(.y %in% c("nround", "nthread")) return(NULL) else  return(.x) }) %>%
       compact
    
-   model <- xgboost::xgb.train(
+   model <- xgboost::xgboost(
       params = mparams,
       data = input,
       nround = 30, 

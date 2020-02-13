@@ -67,7 +67,7 @@ fit_h2o_glm <- function(self){
   
   h2o_data <- h2o::as.h2o(self$process$juice())
   
-  ps <- self$params[!(names(self$params) %in% names(formals(h2o::h2o.glm)))]
+  ps <- self$params[(names(self$params) %in% names(formals(h2o::h2o.glm)))]
   
   model_params <- list(
     x = self$process$ask_x(), 
@@ -100,7 +100,7 @@ fit_h2o_rf <- function(self){
   
   h2o_data <- h2o::as.h2o(self$process$juice())
   
-  ps <- self$params[!(names(self$params) %in% names(formals(h2o::h2o.randomForest)))]
+  ps <- self$params[(names(self$params) %in% names(formals(h2o::h2o.randomForest)))]
   
   model_params <- list(
     x = self$process$ask_x(), 
@@ -125,7 +125,7 @@ fit_h2o_nb <- function(self){
   
   h2o_data <- h2o::as.h2o(self$process$juice())
   
-  ps <- self$params[!(names(self$params) %in% names(formals(h2o::h2o.naiveBayes)))]
+  ps <- self$params[(names(self$params) %in% names(formals(h2o::h2o.naiveBayes)))]
   
   model_params <- list(
     x = self$process$ask_x(), 
@@ -151,7 +151,7 @@ fit_h2o_svm <- function(self){
   
   h2o_data <- h2o::as.h2o(self$process$juice())
   
-  ps <- self$params[!(names(self$params) %in% names(formals(h2o::h2o.psvm)))]
+  ps <- self$params[(names(self$params) %in% names(formals(h2o::h2o.psvm)))]
   
   model_params <- list(
     x = self$process$ask_x(), 
@@ -183,7 +183,7 @@ fit_h2o_gbm <- function(self){
   
   h2o_data <- h2o::as.h2o(self$process$juice())
   
-  ps <- self$params[!(names(self$params) %in% names(formals(h2o::h2o.gbm)))]
+  ps <- self$params[(names(self$params) %in% names(formals(h2o::h2o.gbm)))]
   
   model_params <- list(
     x = self$process$ask_x(), 
@@ -218,7 +218,7 @@ fit_h2o_xgb <- function(self){
   
   h2o_data <- h2o::as.h2o(self$process$juice())
   
-  ps <- self$params[!(names(self$params) %in% names(formals(h2o::h2o.xgboost)))]
+  ps <- self$params[(names(self$params) %in% names(formals(h2o::h2o.xgboost)))]
   
   model_params <- list(
     x = self$process$ask_x(), 
@@ -249,7 +249,7 @@ fit_h2o_dnn <- function(self){
   
   h2o_data <- h2o::as.h2o(self$process$juice())
   
-  ps <- self$params[!(names(self$params) %in% names(formals(h2o::h2o.deeplearning)))]
+  ps <- self$params[(names(self$params) %in% names(formals(h2o::h2o.deeplearning)))]
   
   model_params <- list(
     x = self$process$ask_x(), 

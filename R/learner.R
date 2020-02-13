@@ -5,11 +5,11 @@ learner <- R6::R6Class(
   inherit = backend,
   active = list(
     
-    set_preds <- function(x){
+    set_preds = function(x){
       self$preds <- x
     },
     
-    set_metrics <- function(x){
+    set_metrics = function(x){
       self$metrics <- x
     }
     

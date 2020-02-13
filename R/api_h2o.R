@@ -67,7 +67,7 @@ fit_h2o_glm <- function(self){
   
   h2o_data <- h2o::as.h2o(self$process$juice())
   
-  pnames <- colnames(deeplyr::get_params(h2o::h2o.glm, self$params))
+  pnames <- names(deeplyr::get_params(h2o::h2o.glm, self$params))
   
   model_params <- list(
     x = self$process$ask_x(), 
@@ -100,7 +100,7 @@ fit_h2o_rf <- function(self){
   
   h2o_data <- h2o::as.h2o(self$process$juice())
   
-  pnames <- colnames(deeplyr::get_params(h2o::h2o.randomForest, self$params))
+  pnames <- names(deeplyr::get_params(h2o::h2o.randomForest, self$params))
   
   model_params <- list(
     x = self$process$ask_x(), 
@@ -125,7 +125,7 @@ fit_h2o_nb <- function(self){
   
   h2o_data <- h2o::as.h2o(self$process$juice())
   
-  pnames <- colnames(deeplyr::get_params(h2o::h2o.naiveBayes, self$params))
+  pnames <- names(deeplyr::get_params(h2o::h2o.naiveBayes, self$params))
   
   model_params <- list(
     x = self$process$ask_x(), 
@@ -151,7 +151,7 @@ fit_h2o_svm <- function(self){
   
   h2o_data <- h2o::as.h2o(self$process$juice())
   
-  pnames <- colnames(deeplyr::get_params(h2o::h2o.psvm, self$params))
+  pnames <- names(deeplyr::get_params(h2o::h2o.psvm, self$params))
   
   model_params <- list(
     x = self$process$ask_x(), 
@@ -182,7 +182,7 @@ fit_h2o_gbm <- function(self){
   
   h2o_data <- h2o::as.h2o(self$process$juice())
   
-  pnames <- colnames(deeplyr::get_params(h2o::h2o.gbm, self$params))
+  pnames <- names(deeplyr::get_params(h2o::h2o.gbm, self$params))
   
   model_params <- list(
     x = self$process$ask_x(), 
@@ -217,7 +217,7 @@ fit_h2o_xgb <- function(self){
   
   h2o_data <- h2o::as.h2o(self$process$juice())
   
-  pnames <- colnames(deeplyr::get_params(h2o::h2o.xgboost, self$params))
+  pnames <- names(deeplyr::get_params(h2o::h2o.xgboost, self$params))
   
   model_params <- list(
     x = self$process$ask_x(), 
@@ -248,7 +248,7 @@ fit_h2o_dnn <- function(self){
   
   h2o_data <- h2o::as.h2o(self$process$juice())
   
-  pnames <- colnames(deeplyr::get_params(h2o::h2o.xgboost, self$params))
+  pnames <- names(deeplyr::get_params(h2o::h2o.xgboost, self$params))
   
   model_params <- list(
     x = self$process$ask_x(), 

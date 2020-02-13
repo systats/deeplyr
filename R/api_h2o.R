@@ -67,14 +67,15 @@ fit_h2o_glm <- function(self){
   
   h2o_data <- h2o::as.h2o(self$process$juice())
   
+  pnames <- colnames(deeplyr::get_params(h2o::h2o.glm, self$params))
+  
   model_params <- list(
     x = self$process$ask_x(), 
     y = self$process$ask_y(), 
     training_frame = h2o_data, 
     seed = 42
   ) %>%
-  c(., self$params)
-  
+  c(., self$params[pnames])
   
   model <- do.call(h2o::h2o.glm, model_params)
   
@@ -99,13 +100,15 @@ fit_h2o_rf <- function(self){
   
   h2o_data <- h2o::as.h2o(self$process$juice())
   
+  pnames <- colnames(deeplyr::get_params(h2o::h2o.randomForest, self$params))
+  
   model_params <- list(
     x = self$process$ask_x(), 
     y = self$process$ask_y(), 
     training_frame = h2o_data, 
     seed = 42
   ) %>%
-    c(., self$params)
+    c(., self$params[pnames])
   
   model <- do.call(h2o::h2o.randomForest, model_params)
   
@@ -122,13 +125,15 @@ fit_h2o_nb <- function(self){
   
   h2o_data <- h2o::as.h2o(self$process$juice())
   
+  pnames <- colnames(deeplyr::get_params(h2o::h2o.naiveBayes, self$params))
+  
   model_params <- list(
     x = self$process$ask_x(), 
     y = self$process$ask_y(), 
     training_frame = h2o_data, 
     seed = 42
   ) %>%
-  c(., self$params)
+    c(., self$params[pnames])
   
   model <- do.call(h2o::h2o.naiveBayes, model_params)
   
@@ -146,13 +151,15 @@ fit_h2o_svm <- function(self){
   
   h2o_data <- h2o::as.h2o(self$process$juice())
   
+  pnames <- colnames(deeplyr::get_params(h2o::h2o.psvm, self$params))
+  
   model_params <- list(
     x = self$process$ask_x(), 
     y = self$process$ask_y(), 
     training_frame = h2o_data, 
     seed = 42
   ) %>%
-  c(., self$params)
+    c(., self$params[pnames])
   
   model <- do.call(h2o::h2o.psvm, model_params)
   
@@ -175,13 +182,15 @@ fit_h2o_gbm <- function(self){
   
   h2o_data <- h2o::as.h2o(self$process$juice())
   
+  pnames <- colnames(deeplyr::get_params(h2o::h2o.gbm, self$params))
+  
   model_params <- list(
     x = self$process$ask_x(), 
     y = self$process$ask_y(), 
     training_frame = h2o_data, 
     seed = 42
   ) %>%
-  c(., self$params)
+    c(., self$params[pnames])
   
   model <- do.call(h2o::h2o.gbm, model_params)
   
@@ -208,13 +217,15 @@ fit_h2o_xgb <- function(self){
   
   h2o_data <- h2o::as.h2o(self$process$juice())
   
+  pnames <- colnames(deeplyr::get_params(h2o::h2o.xgboost, self$params))
+  
   model_params <- list(
     x = self$process$ask_x(), 
     y = self$process$ask_y(), 
     training_frame = h2o_data, 
     seed = 42
   ) %>%
-  c(., self$params)
+    c(., self$params[pnames])
   
   model <- do.call(h2o::h2o.xgboost, model_params)
   
@@ -237,13 +248,15 @@ fit_h2o_dnn <- function(self){
   
   h2o_data <- h2o::as.h2o(self$process$juice())
   
+  pnames <- colnames(deeplyr::get_params(h2o::h2o.xgboost, self$params))
+  
   model_params <- list(
     x = self$process$ask_x(), 
     y = self$process$ask_y(), 
     training_frame = h2o_data, 
     seed = 42
   ) %>%
-  c(., self$params)
+    c(., self$params[pnames])
   
   model <- do.call(h2o::h2o.deeplearning, model_params)
   

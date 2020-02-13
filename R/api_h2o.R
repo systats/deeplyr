@@ -67,7 +67,7 @@ fit_h2o_glm <- function(self){
   
   h2o_data <- h2o::as.h2o(self$process$juice())
   
-  ps <- self$params[names(formals(h2o::h2o.glm))] %>% compact
+  ps <- self$params[names(self$params) %in% names(formals(h2o::h2o.glm))] %>% compact
   
   model_params <- list(
     x = self$process$ask_x(), 
@@ -100,7 +100,7 @@ fit_h2o_rf <- function(self){
   
   h2o_data <- h2o::as.h2o(self$process$juice())
   
-  ps <- self$params[names(formals(h2o::h2o.randomForest))] %>% compact
+  ps <- self$params[names(self$params) %in% names(formals(h2o::h2o.randomForest))] %>% compact
 
   model_params <- list(
     x = self$process$ask_x(), 
@@ -125,7 +125,7 @@ fit_h2o_nb <- function(self){
   
   h2o_data <- h2o::as.h2o(self$process$juice())
   
-  ps <- self$params[names(formals(h2o::h2o.naiveBayes))] %>% compact
+  ps <- self$params[names(self$params) %in% names(formals(h2o::h2o.naiveBayes))] %>% compact
   
   model_params <- list(
     x = self$process$ask_x(), 
@@ -151,7 +151,7 @@ fit_h2o_svm <- function(self){
   
   h2o_data <- h2o::as.h2o(self$process$juice())
   
-  ps <- self$params[names(formals(h2o::h2o.psvm))] %>% compact
+  ps <- self$params[names(self$params) %in% names(formals(h2o::h2o.psvm))] %>% compact
   
   model_params <- list(
     x = self$process$ask_x(), 
@@ -183,7 +183,7 @@ fit_h2o_gbm <- function(self){
   
   h2o_data <- h2o::as.h2o(self$process$juice())
   
-  ps <- self$params[names(formals(h2o::h2o.gbm))] %>% compact
+  ps <- self$params[names(self$params) %in% names(formals(h2o::h2o.gbm))] %>% compact
   
   model_params <- list(
     x = self$process$ask_x(), 
@@ -218,7 +218,7 @@ fit_h2o_xgb <- function(self){
   
   h2o_data <- h2o::as.h2o(self$process$juice())
   
-  ps <- self$params[names(formals(h2o::h2o.xgboost))] %>% compact
+  ps <- self$params[names(self$params) %in% names(formals(h2o::h2o.xgboost))] %>% compact
   
   model_params <- list(
     x = self$process$ask_x(), 
@@ -249,7 +249,7 @@ fit_h2o_dnn <- function(self){
   
   h2o_data <- h2o::as.h2o(self$process$juice())
   
-  ps <- self$params[names(formals(h2o::h2o.deeplearning))] %>% compact
+  ps <- self$params[names(self$params) %in% names(formals(h2o::h2o.deeplearning))] %>% compact
   
   model_params <- list(
     x = self$process$ask_x(), 

@@ -3,7 +3,17 @@
 learner <- R6::R6Class(
   
   inherit = backend,
-  
+  active = list(
+    
+    set_preds <- function(...){
+      self$preds <- ...
+    },
+    
+    set_metrics <- function(...){
+      self$metrics <- ...
+    }
+    
+  ),
   public = list(
     ### data slots
     meta = NULL,
@@ -47,8 +57,7 @@ learner <- R6::R6Class(
         }
       }
     },
-
-    
+  
     fit = function(x, y){
       
       ### freeze training data + pre-processing steps

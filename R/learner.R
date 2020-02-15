@@ -62,6 +62,8 @@ learner <- R6::R6Class(
       
       ### freeze training data + pre-processing steps
       self$process$bake(x, y)
+      
+      self$meta$timestamp <- Sys.time()
       start <- Sys.time()
 
       self$model <- private$model_fit(self)

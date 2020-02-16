@@ -33,6 +33,7 @@ learner <- R6::R6Class(
       if(length(params) == 1 & is.null(task)){
         self$meta <- load_meta(params)
         self$params <- load_params(params)
+        self$process <- bridge$new()
         #self$process <- readRDS(glue::glue("{params}/process.rds"))
         
         private$model_backend()
@@ -40,7 +41,7 @@ learner <- R6::R6Class(
       } else if(length(params) > 1 & is.null(task)){
         self$meta <- load_meta(params)
         self$params <- load_params(params)
-        #self$process <- readRDS(glue::glue("{params}/process.rds"))
+        self$process <- bridge$new(readRDS(glue::glue("{params}/process.rds")))
         
         private$model_backend()
         

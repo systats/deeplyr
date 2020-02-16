@@ -64,6 +64,14 @@ eval_linear <- function(preds, y){
     compute_metrics(preds[[y]], preds$pred)
 }
 
+#' f1
+#' @export
+f1 <- function(actual, pred) {
+  pr <- Metrics::precision(actual, pred)
+  rc <- Metrics::recall(actual, pred)
+  pr*rc/(pr+rc)
+}
+
 #' eval_binary
 #' @export
 eval_binary <- function(preds, y){
@@ -73,7 +81,7 @@ eval_binary <- function(preds, y){
     recall = Metrics::recall,
     fbeta_score = Metrics::fbeta_score,
     ce = Metrics::ce,
-    f1 = Metrics::f1,
+    f1 = f1,
     mean = mean_pred, 
     mean_actual = mean_actual,
     sd = sd_pred,
@@ -90,7 +98,6 @@ eval_binary <- function(preds, y){
   
   c(pred, prob)
 }
-
 
 #' rank_prob_score
 #' https://opisthokonta.net/?p=1333

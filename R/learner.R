@@ -30,8 +30,14 @@ learner <- R6::R6Class(
     ### main functions
     initialize = function(params, task = NULL, backend = NULL, meta = NULL){
       
-      if(is.null(task)){
+      if(length(params) == 1 & is.null(task)){
+        self$meta <- load_json(params, "meta")
+        self$params <- load_json(params, "params")
+        self$process <- bridge$new(load_rds(params, "process"))
         
+        private$model_backend()
+        
+      } else if(length(params) > 1 & is.null(task)){
         self$meta <- load_json(params, "meta")
         self$params <- load_json(params, "params")
         self$process <- bridge$new(load_rds(params, "process"))
@@ -39,9 +45,7 @@ learner <- R6::R6Class(
         private$model_backend()
         
         self$model <- private$model_load(params)
-        
         if(file.exists(glue::glue("{params}/tok"))) self$tokenizer <- load_tokenizer(params)
-        
       } else {
         
         self$process <- bridge$new()
@@ -63,16 +67,15 @@ learner <- R6::R6Class(
       ### freeze training data + pre-processing steps
       self$process$bake(x, y)
       
+      self$meta$outcome <- self$process$ask_y()
       self$meta$timestamp <- Sys.time()
-      start <- Sys.time()
 
       self$model <- private$model_fit(self)
 
-      self$meta$runtime <- as.numeric(Sys.time() - start)
+      self$meta$runtime <- as.numeric(Sys.time() - self$meta$timestamp)
 
       ### if avaible: feature importane
       if(!is.null(private$model_imp)) self$imps <- private$model_imp(self)
-      self$meta$outcome <- self$process$ask_y()
       self$meta$n_features <- ncol(self$process$juice_x())
       self$meta$n_train <- nrow(self$process$juice())
     },

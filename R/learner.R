@@ -31,16 +31,16 @@ learner <- R6::R6Class(
     initialize = function(params, task = NULL, backend = NULL, meta = NULL){
       
       if(length(params) == 1 & is.null(task)){
-        self$meta <- load_json(params, "meta")
-        self$params <- load_json(params, "params")
-        self$process <- bridge$new(load_rds(params, "process"))
+        self$meta <- load_meta(params)
+        self$params <- load_params(params)
+        self$process <- readRDS(glue::glue("{params}/process.rds"))
         
         private$model_backend()
         
       } else if(length(params) > 1 & is.null(task)){
-        self$meta <- load_json(params, "meta")
-        self$params <- load_json(params, "params")
-        self$process <- bridge$new(load_rds(params, "process"))
+        self$meta <- load_meta(params)
+        self$params <- load_params(params)
+        self$process <- readRDS(glue::glue("{params}/process.rds"))
         
         private$model_backend()
         

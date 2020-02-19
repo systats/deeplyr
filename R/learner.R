@@ -48,6 +48,8 @@ learner <- R6::R6Class(
       } else {
         self$process <- bridge$new()
         self$params <- params
+        self$meta$taks <- task
+        self$meta$backend <- backend
       }
       
       private$model_backend()

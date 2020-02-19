@@ -218,9 +218,10 @@ fit_h2o_xgb <- function(self){
   
   h2o_data <- h2o::as.h2o(self$process$juice())
 
-  ps <- self$params[!(names(self$params) %in% "backend")]
+  ps <- self$params
   ps <- ps[names(ps) %in% names(formals(h2o::h2o.xgboost))] %>% compact
-  
+  ps$backend <- "auto"
+    
   model_params <- list(
     x = self$process$ask_x(), 
     y = self$process$ask_y(), 

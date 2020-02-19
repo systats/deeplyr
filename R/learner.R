@@ -28,39 +28,29 @@ learner <- R6::R6Class(
     tokenizer = NULL, 
     
     ### main functions
-    initialize = function(params, task = NULL, backend = NULL, meta = NULL){
+    initialize = function(params, task = NULL, backend = NULL){
       
       if(length(params) == 1 & is.null(task)){
+        
         self$meta <- load_meta(params)
         self$params <- load_params(params)
         self$process <- bridge$new()
         #self$process <- readRDS(glue::glue("{params}/process.rds"))
-        
-        private$model_backend()
-        
+
       } else if(length(params) > 1 & is.null(task)){
+        
         self$meta <- load_meta(params)
         self$params <- load_params(params)
         self$process <- bridge$new(readRDS(glue::glue("{params}/process.rds")))
-        
-        private$model_backend()
-        
         self$model <- private$model_load(params)
         if(file.exists(glue::glue("{params}/tok"))) self$tokenizer <- load_tokenizer(params)
-      } else {
         
+      } else {
         self$process <- bridge$new()
         self$params <- params
-        
-        if(!is.null(meta)){
-          self$meta <- meta
-        } else {
-          self$meta$task <- task
-          self$meta$backend <- backend
-          
-          private$model_backend()
-        }
       }
+      
+      private$model_backend()
     },
   
     fit = function(x, y){

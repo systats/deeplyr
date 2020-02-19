@@ -217,8 +217,9 @@ fit_h2o_xgb <- function(self){
 #   If the distribution is gamma, the response column must be numeric.
   
   h2o_data <- h2o::as.h2o(self$process$juice())
-  
-  ps <- self$params[names(self$params) %in% names(formals(h2o::h2o.xgboost))] %>% compact
+
+  ps <- self$params[!(names(self$params) %in% "backend")]
+  ps <- ps[names(ps) %in% names(formals(h2o::h2o.xgboost))] %>% compact
   
   model_params <- list(
     x = self$process$ask_x(), 

@@ -30,14 +30,14 @@ learner <- R6::R6Class(
     ### main functions
     initialize = function(params, task = NULL, backend = NULL){
       
-      if(length(params) == 1 & is.null(task)){
+      if(length(params) > 1 & is.null(task)){
         
         self$meta <- load_meta(params)
         self$params <- load_params(params)
         self$process <- bridge$new()
         #self$process <- readRDS(glue::glue("{params}/process.rds"))
 
-      } else if(length(params) > 1 & is.null(task)){
+      } else if(length(params) == 1 & is.null(task)){
         
         self$meta <- load_meta(params)
         self$params <- load_params(params)

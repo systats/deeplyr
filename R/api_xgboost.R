@@ -1,5 +1,9 @@
 #' save_xgboost
 #' @export
+load_xgboost <- function(path) xgboost::xgb.load(glue::glue("{path}/model"))
+
+#' save_xgboost
+#' @export
 save_xgboost <- function(file, name, path) xgboost::xgb.save(file, fname = glue::glue("{path}/{name}"))
 
 

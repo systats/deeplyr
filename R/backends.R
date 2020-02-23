@@ -31,6 +31,7 @@ backend <- R6::R6Class("backend",
         private$model_predict <- predict_xgboost
         private$model_imp <- feature_imp_xgboost
         private$model_save <- save_xgboost
+        private$model_load <- load_xgboost
       }
       
       ### lightgbm

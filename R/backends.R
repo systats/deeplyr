@@ -54,10 +54,10 @@ backend <- R6::R6Class("backend",
       ### h2o
       if(stringr::str_detect(self$meta$backend, "h2o_")){
         
-        private$model_predict <- predict_h2o
-        private$model_imp <- feature_imp_h2o
-        private$model_save <- save_h2o
-        private$model_load <- load_h2o
+        private$model_predict <- deeplyr::predict_h2o
+        private$model_imp <- deeplyr::feature_imp_h2o
+        private$model_save <- deeplyr::save_h2o
+        private$model_load <- deeplyr::load_h2o
         
         if(self$meta$backend == "h2o_glm") private$model_fit <- deeplyr::fit_h2o_glm
         if(self$meta$backend == "h2o_rf") private$model_fit <- deeplyr::fit_h2o_rf

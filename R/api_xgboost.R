@@ -8,6 +8,7 @@ save_xgboost <- function(file, name, path) xgboost::xgb.save(file, fname = glue:
 
 
 #' feature_imp_xgboost
+#' @export
 feature_imp_xgboost <- function(self){
 
    xgboost::xgb.importance(feature_names = colnames(self$process$juice_x()), model = self$model) %>%

@@ -42,8 +42,6 @@ learner <- R6::R6Class(
         self$meta <- load_meta(params)
         self$params <- load_params(params)
         self$process <- bridge$new(readRDS(glue::glue("{params}/process.rds")))
-        self$model <- private$model_load(params)
-        if(file.exists(glue::glue("{params}/tok"))) self$tokenizer <- load_tokenizer(params)
         
       } else {
         
@@ -55,6 +53,9 @@ learner <- R6::R6Class(
       }
       
       private$model_backend()
+      
+      if(predict) self$model <- private$model_load(params)
+      if(file.exists(glue::glue("{params}/tok"))) self$tokenizer <- load_tokenizer(params)
     },
   
     fit = function(x, y){

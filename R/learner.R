@@ -28,16 +28,16 @@ learner <- R6::R6Class(
     tokenizer = NULL, 
     
     ### main functions
-    initialize = function(params, task = NULL, backend = NULL){
+    initialize = function(params, task = NULL, backend = NULL, retrain = F, predict = F){
       
-      if(length(params) > 1 & is.null(task)){
+      if(retrain){
         
         self$meta <- load_meta(params)
         self$params <- load_params(params)
         self$process <- bridge$new()
         #self$process <- readRDS(glue::glue("{params}/process.rds"))
 
-      } else if(length(params) == 1 & is.null(task)){
+      } else if(predict){
         
         self$meta <- load_meta(params)
         self$params <- load_params(params)
@@ -46,10 +46,12 @@ learner <- R6::R6Class(
         if(file.exists(glue::glue("{params}/tok"))) self$tokenizer <- load_tokenizer(params)
         
       } else {
+        
         self$process <- bridge$new()
         self$params <- params
         self$meta$task <- task
         self$meta$backend <- backend
+        
       }
       
       private$model_backend()

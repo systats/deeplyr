@@ -27,11 +27,11 @@ backend <- R6::R6Class("backend",
       
       ### xgboost
       if(self$meta$backend == "xgboost"){
-        private$model_fit <- fit_xgboost
-        private$model_predict <- predict_xgboost
-        private$model_imp <- feature_imp_xgboost
-        private$model_save <- save_xgboost
-        private$model_load <- load_xgboost
+        private$model_fit <- deeplyr::fit_xgboost
+        private$model_predict <- deeplyr::predict_xgboost
+        private$model_imp <- deeplyr::feature_imp_xgboost
+        private$model_save <- deeplyr::save_xgboost
+        private$model_load <- deeplyr::load_xgboost
       }
       
       ### lightgbm
@@ -59,13 +59,13 @@ backend <- R6::R6Class("backend",
         private$model_save <- save_h2o
         private$model_load <- load_h2o
         
-        if(self$meta$backend == "h2o_glm") private$model_fit <- fit_h2o_glm
-        if(self$meta$backend == "h2o_rf") private$model_fit <- fit_h2o_rf
-        if(self$meta$backend == "h2o_nb")  private$model_fit <- fit_h2o_nb
-        if(self$meta$backend == "h2o_svm") private$model_fit <- fit_h2o_svm
-        if(self$meta$backend == "h2o_gbm") private$model_fit <- fit_h2o_gbm
-        if(self$meta$backend == "h2o_xgb") private$model_fit <- fit_h2o_xgb
-        if(self$meta$backend == "h2o_dnn") private$model_fit <- fit_h2o_dnn
+        if(self$meta$backend == "h2o_glm") private$model_fit <- deeplyr::fit_h2o_glm
+        if(self$meta$backend == "h2o_rf") private$model_fit <- deeplyr::fit_h2o_rf
+        if(self$meta$backend == "h2o_nb")  private$model_fit <- deeplyr::fit_h2o_nb
+        if(self$meta$backend == "h2o_svm") private$model_fit <- deeplyr::fit_h2o_svm
+        if(self$meta$backend == "h2o_gbm") private$model_fit <- deeplyr::fit_h2o_gbm
+        if(self$meta$backend == "h2o_xgb") private$model_fit <- deeplyr::fit_h2o_xgb
+        if(self$meta$backend == "h2o_dnn") private$model_fit <- deeplyr::fit_h2o_dnn
         
       }
       ### sklearn

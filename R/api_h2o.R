@@ -26,6 +26,7 @@ predict_h2o <- function(self, new_data){
   
   preds <- h2o::h2o.predict(self$model, h2o::as.h2o(self$process$stream(new_data))) %>%
     as.data.frame %>%
+    dplyr::as_tibble() %>%
     dplyr::mutate_if(is.numeric, round, 3) 
     
   
@@ -35,7 +36,8 @@ predict_h2o <- function(self, new_data){
     
   } else if(self$meta$task == "binary"){
     
-    preds <- preds %>% dplyr::select(pred = predict, prob = p1)
+    preds <- preds %>% 
+      dplyr::select(pred = predict, prob = p1)
     
   } else if(self$meta$task %in% c("ordinal", "multi")){
     

@@ -1,7 +1,7 @@
 #' load_h2o
 #' @export
 load_h2o <- function(path){
-  h2o::h2o.loadModel(path)
+  h2o::h2o.loadModel(glue::glue("{path}/model"))
 }
 
 #' save_h2o

@@ -34,8 +34,8 @@ fit_fastnb <- function(self){
   
   list(
     rec = rec,
-    local_fnb_win = fastNaiveBayes::fnb.bernoulli(x, outcomes$winner011), 
-    local_fnb_win_draw = fastNaiveBayes::fnb.bernoulli(x, outcomes$winner001), 
+    local_fnb_win = fastNaiveBayes::fnb.bernoulli(x, outcomes$winner100), 
+    local_fnb_win_draw = fastNaiveBayes::fnb.bernoulli(x, outcomes$winner110), 
     visitor_fnb_win = fastNaiveBayes::fnb.bernoulli(x, outcomes$winner001), 
     visitor_fnb_win_draw = fastNaiveBayes::fnb.bernoulli(x, outcomes$winner011), 
     fnb_ft_winner = fastNaiveBayes::fnb.multinomial(x, outcomes$winner123), 

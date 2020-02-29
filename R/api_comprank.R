@@ -5,7 +5,7 @@ fit_comprank <- function(self){
   outcomes <- self$process$data$outcomes
   predictors <- self$process$data$predictors
   
-  wide <- tibble(
+  wide <- dplyr::tibble(
     game = 1:nrow(outcomes),
     player1 = as.numeric(predictors[[1]]), 
     score1 = as.numeric(outcomes[[1]]), 

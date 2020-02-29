@@ -3,7 +3,7 @@
 fit_comprank <- function(self){
   
   outcomes <- self$process$data$outcomes
-  predictors <- self$process$juice_x()
+  predictors <- self$process$data$predictors
   
   wide <- tibble(
     game = 1:nrow(outcomes),
@@ -24,7 +24,7 @@ fit_comprank <- function(self){
   elo <- comperank::rank_elo(long, keep_rating = T)
 
   list(massy, colley, keener, markov, od, elo) %>%
-    purrr::reduce(dplyr::inner_join) %>%
+    purrr::reduce(dplyr::inner_join, by = "player") %>%
     dplyr::mutate_all(round, 3)
 }
 

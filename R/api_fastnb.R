@@ -3,6 +3,7 @@
 fit_fastnb <- function(self){
   
   outcomes <- self$process$data$outcomes %>%
+    set_names(c("local_team_score", "visitor_team_score")) %>%
     dplyr::mutate(
       winner100 = ifelse(local_team_score > visitor_team_score, 1, 0),
       winner110 = ifelse(local_team_score >= visitor_team_score, 1, 0),
@@ -16,7 +17,7 @@ fit_fastnb <- function(self){
       ) 
     )
 
-  df <- self$process$juice_x() %>%
+  df <- self$process$data$predictors %>%
     dplyr::mutate(y = 1) %>%
     dplyr::mutate(
       local_team_id = as.factor(local_team_id),
@@ -28,7 +29,8 @@ fit_fastnb <- function(self){
     recipes::step_dummy(local_team_id, visitor_team_id) %>%
     recipes::prep(training = df, retain = T)
   
-  x <- recipes::juice(rec)
+  x <- recipes::juice(rec) %>%
+    select(-y)
   
   list(
     rec = rec,

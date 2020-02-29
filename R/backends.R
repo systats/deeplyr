@@ -102,6 +102,8 @@ backend <- R6::R6Class("backend",
         
       }
       
+      ### FEATURES
+      
       ### goalmodel
       if(self$meta$backend == "goalmodel"){
         private$model_fit_pair <- fit_goalmodel
@@ -111,6 +113,16 @@ backend <- R6::R6Class("backend",
       if(self$meta$backend == "elo"){
         private$model_fit_pair <- fit_elo
         private$model_predict_pair <- predict_elo
+      }
+      ### comprank
+      if(self$meta$backend == "comprank"){
+        private$model_fit_pair <- fit_comprank
+        private$model_predict_pair <- predict_comprank
+      }
+      ### fastnb
+      if(self$meta$backend == "fastnb"){
+        private$model_fit_pair <- fit_fastnb
+        private$model_predict_pair <- predict_fastnb
       }
     }
   )

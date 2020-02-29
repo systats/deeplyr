@@ -34,6 +34,29 @@ test <- games %>%
 ```
 
 
+## Comprank
+
+```{r}
+# devtools::install_github("echasnovski/comperank")
+library(rlang)
+library(comperank)
+
+# ncaa2005
+# mat <- comperes::as_widecr(ncaa2005)
+
+devtools::document()
+
+rec <- recipe(local_team_score + visitor_team_score ~ local_team_id + visitor_team_id + game_id, data = head(games)) %>%
+  update_role(game_id, new_role = "ID")
+
+f2 <- learner$new(params = list(type = ""), task = "linear", backend = "comprank")
+
+f2$fit_pair(rec, na.omit(train[1:200,]))
+preds <- f2$predict_pair(test[1:100,], "w200")
+preds %>% glimpse
+```
+
+
 ## POIS
 
 ```{r}
@@ -52,6 +75,8 @@ preds
 ```
 
 
+## ELO
+
 ```{r}
 # devtools::install()
 devtools::document()
@@ -69,6 +94,21 @@ preds
 ```
 
 
+# fastnb
+
+```{r}
+# devtools::install_github("mskogholt/fastNaiveBayes")
+library(fastNaiveBayes)
+devtools::document()
+
+rec <- recipe(local_team_score + visitor_team_score ~ local_team_id + visitor_team_id + game_id, data = head(games)) %>%
+  update_role(game_id, new_role = "ID")
+
+f3 <- learner$new(params = list(some = ""), task = "linear", backend = "fastnb")
+f3$fit_pair(rec, na.omit(train[1:100,]))
+preds <- f3$predict_pair(test[1:100,], "w200")
+preds
+```
 
 
 

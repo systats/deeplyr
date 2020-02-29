@@ -30,7 +30,7 @@ fit_fastnb <- function(self){
     recipes::prep(training = df, retain = T)
   
   x <- recipes::juice(rec) %>%
-    select(-y)
+    dplyr::select(-y)
   
   list(
     rec = rec,
@@ -56,9 +56,7 @@ predict_fastnb <- function(self, new_data){
   if(is.null(self$model)){
     return(self$process$stream_id_x(new_data))
   }
-  
-  # df <- self$process$stream_x() 
-  
+
   x <- recipes::bake(self$model[[1]], new_data = self$process$stream_id_x(new_data))
   
   self$model[-1] %>%

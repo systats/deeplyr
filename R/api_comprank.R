@@ -19,7 +19,7 @@ fit_comprank <- function(self){
   massy <- comperank::rank_massey(wide, keep_rating = T) 
   colley <- comperank::rank_colley(wide, keep_rating = T)
   keener <- comperank::rank_keener(long, !!! comperes::h2h_funs["mean_score"], keep_rating = T)
-  markov <- comperank::rank_markov(long, !!! comperes::h2h_funs["num_wins"], keep_rating = T)
+  markov <- comperank::rank_markov(long, !!! comperes::h2h_funs["mean_score"], keep_rating = T)
   od <- comperank::rank_od(long, if (player1[1] == player2[1]) 0 else mean(score1))
   elo <- comperank::rank_elo(long, keep_rating = T)
 

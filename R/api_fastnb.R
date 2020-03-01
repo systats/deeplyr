@@ -17,7 +17,8 @@ fit_fastnb <- function(self){
         score1 == score2 ~ 0,
         score1 < score2 ~ -1
       ) 
-    )
+    ) %>%
+    glimpse
 
   ### Here we build the design matrix, because globally would be two sparse
   df <- self$process$data$predictors %>%
@@ -29,8 +30,7 @@ fit_fastnb <- function(self){
     recipes::prep(df, retain = T)
   
   x <- recipes::juice(rec) %>%
-    dplyr::select(-y)  %>%
-    glimpse
+    dplyr::select(-y) 
   
   list(
     rec = rec,
@@ -63,8 +63,7 @@ predict_fastnb <- function(self, new_data){
       local_team_id = as.factor(local_team_id),
       visitor_team_id = as.factor(visitor_team_id)
     ) %>% 
-    recipes::bake(self$model[[1]], .) %>%
-    glimpse
+    recipes::bake(self$model[[1]], .)
 
   self$model[-1] %>%
     purrr::imap_dfc(~{

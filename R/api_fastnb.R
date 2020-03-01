@@ -11,12 +11,13 @@ fit_fastnb <- function(self){
       winner011 = ifelse(score2 >= score1, 1, 0),
       winner001 = ifelse(score2 > score1, 1, 0),
       winner010 = ifelse(score2 > score1, 1, 0),
-      score_diff = score1 - score2,
       winner123 = dplyr::case_when(
         score1 > score2 ~ 1,
         score1 == score2 ~ 0,
         score1 < score2 ~ -1
-      ) 
+      ),
+      both_score = ifelse(score1 > 0 & score2 > 0, 1, 0),
+      over_under = ifelse((score1+score2) > 2.5, 1, 0)
     )
 
   ### Here we build the design matrix, because globally would be two sparse
@@ -41,10 +42,9 @@ fit_fastnb <- function(self){
     fnb_ft_winner = fastNaiveBayes::fnb.multinomial(x, outcomes$winner123), 
     local_fnb_score = fastNaiveBayes::fnb.poisson(x, outcomes$score1), 
     visitor_fnb_score = fastNaiveBayes::fnb.poisson(x, outcomes$score1), 
-    fnb_score_diff = fastNaiveBayes::fastNaiveBayes(x, outcomes$score_diff),
     local_fnb_score_event = fastNaiveBayes::fnb.multinomial(x, outcomes$score1), 
-    visitor_fnb_score_event = fastNaiveBayes::fnb.multinomial(x, outcomes$score2), 
-    fnb_score_event_diff = fastNaiveBayes::fnb.multinomial(x, outcomes$score_diff)
+    fnb_both_score = fastNaiveBayes::fnb.bernoulli(x, outcomes$both_score), 
+    fnb_over_under = fastNaiveBayes::fnb.bernoulli(x, outcomes$winner010)
   )
 }
 

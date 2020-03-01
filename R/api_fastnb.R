@@ -28,7 +28,9 @@ fit_fastnb <- function(self){
     recipes::step_dummy(local_team_id, visitor_team_id) %>%
     recipes::prep(df, retain = T)
   
-  x <- recipes::juice(rec)
+  x <- recipes::juice(rec) %>%
+    dplyr::select(-y)  %>%
+    glimpse
   
   list(
     rec = rec,
@@ -61,7 +63,8 @@ predict_fastnb <- function(self, new_data){
       local_team_id = as.factor(local_team_id),
       visitor_team_id = as.factor(visitor_team_id)
     ) %>% 
-    recipes::bake(self$model[[1]], .)
+    recipes::bake(self$model[[1]], .) %>%
+    glimpse
 
   self$model[-1] %>%
     purrr::imap_dfc(~{
@@ -69,5 +72,5 @@ predict_fastnb <- function(self, new_data){
         as.character %>%
         as.numeric
     }) %>%
-    cbind(new_data[,1, drop=F], .)
+    cbind(self$process$stream_id_x(new_data), .)
 }

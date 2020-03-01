@@ -4,6 +4,7 @@ fit_fastnb <- function(self){
   
   outcomes <- self$process$data$outcomes %>%
     purrr::set_names(c("score1", "score2")) %>%
+    dplyr::mutate_all(as.numeric) %>%
     dplyr::mutate(
       winner100 = ifelse(score1 > score2, 1, 0),
       winner110 = ifelse(score1 >= score2, 1, 0),

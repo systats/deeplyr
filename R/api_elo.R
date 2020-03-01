@@ -6,8 +6,8 @@ fit_elo <- function(self){
   predictors <- self$process$juice_x()
   
   .data <- list(
-    goals1 = as.numeric(outcomes[[1]]), 
-    goals2 = as.numeric(outcomes[[2]]),
+    goals1 = as.numeric(as.character(outcomes[[1]])), 
+    goals2 = as.numeric(as.character(outcomes[[2]])),
     team1 = as.character(predictors[[1]]), 
     team2 = as.character(predictors[[2]])
   )

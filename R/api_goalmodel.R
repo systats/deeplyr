@@ -6,10 +6,10 @@ fit_goalmodel <- function(self){
    predictors <- self$process$juice_x()
    
    form <- list(
-      goals1 = as.numeric(outcomes[[1]]), 
-      goals2 = as.numeric(outcomes[[2]]),
-      team1 = as.numeric(predictors[[1]]), 
-      team2 = as.numeric(predictors[[2]])
+      goals1 = as.numeric(as.character(outcomes[[1]])), 
+      goals2 = as.numeric(as.character(utcomes[[2]])),
+      team1 = as.numeric(as.character(predictors[[1]])), 
+      team2 = as.numeric(as.character(predictors[[2]]))
    )
    
    ### linear outcome only!

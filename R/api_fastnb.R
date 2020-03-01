@@ -51,5 +51,6 @@ predict_fastnb <- function(self, new_data){
       predict(.x, newdata = self$process$stream(new_data)) %>%
         as.character %>%
         as.numeric
-    })
+    }) %>%
+    cbind(self$process$stream_id_x(new_data)[,1, drop=F], .)
 }

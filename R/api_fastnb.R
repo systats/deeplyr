@@ -17,8 +17,7 @@ fit_fastnb <- function(self){
         score1 == score2 ~ 0,
         score1 < score2 ~ -1
       ) 
-    ) %>%
-    glimpse
+    )
 
   ### Here we build the design matrix, because globally would be two sparse
   df <- self$process$data$predictors %>%

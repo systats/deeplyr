@@ -22,11 +22,11 @@ load("gams_sub.Rdata")
 games <- gams_sub %>%
   filter(league_id == 82) %>%
   mutate_at(vars(game_id, contains("team_id")), as.integer) %>%
-  select(-winner_team_id) %>%
-  mutate(
-    local_team_id = as.factor(local_team_id),
-    visitor_team_id = as.factor(visitor_team_id)
-  ) 
+  select(-winner_team_id)
+  # mutate(
+  #   local_team_id = as.factor(local_team_id),
+  #   visitor_team_id = as.factor(visitor_team_id)
+  # ) 
 
 games %>% 
   count(local_team_id, visitor_team_id, sort = T)
@@ -116,7 +116,7 @@ preds <- f3$predict_pair(test, "w200")
 preds %>% count(fnb_score_event_diff_teamscore_w200)
 
 f3$meta
-preds$visitor_fnb_score_teamscore_w200 %>% hist
+preds$fnb_ft_winner_teamscore_w200 %>% hist
 # rec <- df %>%
 #   recipes::recipe(y ~ local_team_id + visitor_team_id, data = head(.)) %>%
 #   recipes::step_dummy(local_team_id, visitor_team_id) %>%
@@ -124,6 +124,9 @@ preds$visitor_fnb_score_teamscore_w200 %>% hist
 # 
 # x <- recipes::juice(rec) %>%
 #   dplyr::select(-y)
+
+
+train %>% count(visitor_team_id)
 ```
 
 

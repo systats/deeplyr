@@ -55,14 +55,19 @@ predict_fastnb <- function(self, new_data){
   if(is.null(self$model)){
     return(self$process$stream_id_x(new_data))
   }
-    
-  x <- recipes::bake(self$model[[1]], self$process$stream(new_data))
-  
+   
+  x <- new_data %>%
+    dplyr::mutate(
+      local_team_id = as.factor(local_team_id),
+      visitor_team_id = as.factor(visitor_team_id)
+    ) %>% 
+    recipes::bake(self$model[[1]], .)
+
   self$model[-1] %>%
     purrr::imap_dfc(~{
       predict(.x, newdata = x) %>%
         as.character %>%
         as.numeric
     }) %>%
-    cbind(self$process$stream_id_x(new_data)[,1, drop=F], .)
+    cbind(new_data[,1, drop=F], .)
 }

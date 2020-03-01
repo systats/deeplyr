@@ -108,8 +108,7 @@ devtools::document()
 rec <- games %>%
   head() %>%
   recipe(local_team_score + visitor_team_score ~ local_team_id + visitor_team_id + game_id, data = .) %>%
-  recipes::update_role(game_id, new_role = "ID") %>%
-  recipes::step_dummy(local_team_id, visitor_team_id)
+  recipes::update_role(game_id, new_role = "ID")
 
 f3 <- learner$new(params = list(some = ""), task = "linear", backend = "fastnb")
 f3$fit_pair(rec, train)

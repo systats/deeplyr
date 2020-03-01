@@ -19,9 +19,19 @@ fit_fastnb <- function(self){
       ) 
     )
 
-  x <- self$process$data$predictors
+  ### Here we build the design matrix, because globally would be two sparse
+  df <- self$process$data$predictors %>%
+    dplyr::mutate_all(as.factor) %>%
+    dplyr::mutate(y = 1)
+  
+  rec <- recipes::recipe(y ~ local_team_id + visitor_team_id, data = df) %>%
+    recipes::step_dummy(local_team_id, visitor_team_id) %>%
+    recipes::prep(df, retain = T)
+  
+  x <- recipes::juice(rec)
   
   list(
+    rec = rec,
     local_fnb_win = fastNaiveBayes::fnb.bernoulli(x, outcomes$winner100), 
     local_fnb_win_draw = fastNaiveBayes::fnb.bernoulli(x, outcomes$winner110), 
     visitor_fnb_win = fastNaiveBayes::fnb.bernoulli(x, outcomes$winner001), 
@@ -45,10 +55,12 @@ predict_fastnb <- function(self, new_data){
   if(is.null(self$model)){
     return(self$process$stream_id_x(new_data))
   }
-
-  self$model %>%
+    
+  x <- recipes::bake(self$model[[1]], self$process$stream(new_data))
+  
+  self$model[-1] %>%
     purrr::imap_dfc(~{
-      predict(.x, newdata = self$process$stream(new_data)) %>%
+      predict(.x, newdata = x) %>%
         as.character %>%
         as.numeric
     }) %>%

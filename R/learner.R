@@ -96,17 +96,22 @@ learner <- R6::R6Class(
       
       ### freeze training data + pre-processing steps
       self$process$bake(x, y)
+      self$meta$timestamp <- Sys.time()
       
       start <- Sys.time()
       
       self$model <- private$model_fit_pair(self)
       
       self$meta$runtime <- as.numeric(Sys.time() - start)
+      self$meta$n_features <- ncol(self$process$juice_x())
+      self$meta$n_train <- nrow(self$process$juice())
     },
     
     predict_pair = function(new_data, suffix){
       
       if(!is.null(self$model)){
+    
+        self$meta$n_test <- nrow(new_data)
         
         yname <- self$process$ask_y() %>% 
           stringr::str_remove("^local_|^visitor_") %>% 

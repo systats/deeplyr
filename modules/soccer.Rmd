@@ -22,7 +22,11 @@ load("gams_sub.Rdata")
 games <- gams_sub %>%
   filter(league_id == 82) %>%
   mutate_at(vars(game_id, contains("team_id")), as.integer) %>%
-  select(-winner_team_id)
+  select(-winner_team_id) %>%
+  mutate(
+    local_team_id = as.factor(local_team_id),
+    visitor_team_id = as.factor(visitor_team_id)
+  ) 
 
 games %>% 
   count(local_team_id, visitor_team_id, sort = T)
@@ -101,13 +105,26 @@ preds
 library(fastNaiveBayes)
 devtools::document()
 
-rec <- recipe(local_team_score + visitor_team_score ~ local_team_id + visitor_team_id + game_id, data = head(games)) %>%
-  update_role(game_id, new_role = "ID")
+rec <- games %>%
+  head() %>%
+  recipe(local_team_score + visitor_team_score ~ local_team_id + visitor_team_id + game_id, data = .) %>%
+  recipes::update_role(game_id, new_role = "ID") %>%
+  recipes::step_dummy(local_team_id, visitor_team_id)
 
 f3 <- learner$new(params = list(some = ""), task = "linear", backend = "fastnb")
-f3$fit_pair(rec, na.omit(train[1:100,]))
-preds <- f3$predict_pair(test[1:100,], "w200")
-preds
+f3$fit_pair(rec, train)
+preds <- f3$predict_pair(test, "w200")
+preds %>% count(fnb_score_event_diff_teamscore_w200)
+
+f3$meta
+preds$visitor_fnb_score_teamscore_w200 %>% hist
+# rec <- df %>%
+#   recipes::recipe(y ~ local_team_id + visitor_team_id, data = head(.)) %>%
+#   recipes::step_dummy(local_team_id, visitor_team_id) %>%
+#   recipes::prep(training = df, retain = T)
+# 
+# x <- recipes::juice(rec) %>%
+#   dplyr::select(-y)
 ```
 
 

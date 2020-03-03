@@ -31,7 +31,7 @@ fit_goalmodel <- function(self){
 
 #' get_probs 
 #' @export
-get_estimates <- function(model, x_test){
+get_estimates <- function(x_test, model){
    weights <- model$parameters[c("attack", "defense")] %>%
       purrr::imap(~tibble::enframe(.x, name = "team_id", .y)) %>%
       purrr::reduce(dplyr::full_join, by = "team_id") %>%
@@ -45,14 +45,14 @@ get_estimates <- function(model, x_test){
 
 #' get_probs 
 #' @export
-get_probs <- function(model, x_test){
+get_probs <- function(x_test, model){
    results <- goalmodel::predict_result(model, team1 = x_test$local_team_id, team2 = x_test$visitor_team_id, return_df = T) %>%
       dplyr::rename(local_team_id = team1, visitor_team_id = team2, local_feature_p = p1, draw_feature_p = pd, visitor_feature_p = p2)
 }
 
 #' get_expg_pos 
 #' @export
-get_expg <- function(model, x_test){
+get_expg <- function(x_test, model){
    goalmodel::predict_expg(model, team1 = x_test$local_team_id, team2 = x_test$visitor_team_id, return_df = T) %>%
       dplyr::rename(local_team_id = team1, visitor_team_id = team2, local_feature_expg = expg1, visitor_feature_expg = expg2)
 }
@@ -85,27 +85,20 @@ predict_goalmodel <- function(self, new_data){
    teams <- self$process$stream(new_data)
    
    ### Extract expectedprobabilities
-   probs <- get_probs(self$model, teams)
+   probs <- teams %>% split(1:nrow(.)) %>% purrr::map_dfr(get_probs_pos, self$model)
    
    ### Extract expected goals
-   xg <- get_expg(self$model, teams)
+   xg <- teams %>% split(1:nrow(.)) %>% purrr::map_dfr(get_expg_pos, self$model)
    
    ### Extract attack and defense param
-   estimates <- get_estimates(self$model, teams)
+   estimates <- teams %>% split(1:nrow(.)) %>% purrr::map_dfr(get_estimates_pos, self$model)
    
    self$process$stream_id_x(new_data) %>%
       list(., probs, xg, estimates) %>%
       purrr::discard(is.null) %>%
       purrr::map(dplyr::mutate_all, as.numeric) %>%
-      purrr::reduce(dplyr::left_join, by = c("local_team_id", "visitor_team_id")) %>%
+      purrr::reduce(dplyr::inner_join, by = c("local_team_id", "visitor_team_id")) %>%
       dplyr::rename_all(~stringr::str_replace(.x, "feature", self$params$type))
-
-   # self$process$stream_id_x(new_data) %>%
-   #    tidyr::gather(side, team_id, -game_id) %>%
-   #    dplyr::mutate(side = stringr::str_extract(side, "^local|^visitor")) %>%
-   #    dplyr::left_join(weights, by = "team_id") %>%
-   #    dplyr::distinct(game_id, team_id, .keep_all = T) %>%
-   #    tidyr::pivot_wider(id_cols = game_id, names_from = side, values_from = team_id:ncol(.))
 }
 
 

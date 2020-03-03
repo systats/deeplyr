@@ -4,7 +4,7 @@
 \alias{get_estimates}
 \title{get_probs}
 \usage{
-get_estimates(model, x_test)
+get_estimates(x_test, model)
 }
 \description{
 get_probs

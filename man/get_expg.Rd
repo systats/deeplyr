@@ -4,7 +4,7 @@
 \alias{get_expg}
 \title{get_expg_pos}
 \usage{
-get_expg(model, x_test)
+get_expg(x_test, model)
 }
 \description{
 get_expg_pos

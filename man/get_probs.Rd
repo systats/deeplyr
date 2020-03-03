@@ -4,7 +4,7 @@
 \alias{get_probs}
 \title{get_probs}
 \usage{
-get_probs(model, x_test)
+get_probs(x_test, model)
 }
 \description{
 get_probs

@@ -114,10 +114,10 @@ backend <- R6::R6Class("backend",
         private$model_fit_pair <- fit_elo
         private$model_predict_pair <- predict_elo
       }
-      ### comprank
-      if(self$meta$backend == "comprank"){
-        private$model_fit_pair <- fit_comprank
-        private$model_predict_pair <- predict_comprank
+      ### comperank
+      if(self$meta$backend == "comperank"){
+        private$model_fit_pair <- fit_comperank
+        private$model_predict_pair <- predict_comperank
       }
       ### fastnb
       if(self$meta$backend == "fastnb"){

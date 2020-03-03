@@ -11,7 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r}
 devtools::document()
 # devtools::install()
-pacman::p_load(tidyverse, recipes, tidyr)
+pacman::p_load(tidyverse, recipes, tidyr, comperes, comperank)
 ```
 
 
@@ -42,8 +42,8 @@ test <- games %>%
 
 ```{r}
 # devtools::install_github("echasnovski/comperank")
-library(rlang)
-library(comperank)
+#library(rlang)
+#library(comperank)
 
 # ncaa2005
 # mat <- comperes::as_widecr(ncaa2005)
@@ -53,7 +53,7 @@ devtools::document()
 rec <- recipe(local_team_score + visitor_team_score ~ local_team_id + visitor_team_id + game_id, data = head(games)) %>%
   update_role(game_id, new_role = "ID")
 
-f2 <- learner$new(params = list(type = ""), task = "linear", backend = "comprank")
+f2 <- learner$new(params = list(type = ""), task = "linear", backend = "comperank")
 
 f2$fit_pair(rec, na.omit(train[1:200,]))
 preds <- f2$predict_pair(test[1:100,], "w200")

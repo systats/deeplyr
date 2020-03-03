@@ -1,6 +1,6 @@
-#' fit_comprank
+#' fit_comperank
 #' @export
-fit_comprank <- function(self){
+fit_comperank <- function(self){
   
   outcomes <- self$process$data$outcomes
   predictors <- self$process$data$predictors
@@ -13,13 +13,12 @@ fit_comprank <- function(self){
     score2 = as.numeric(outcomes[[2]])
   ) %>% 
   comperes::as_widecr()
-  
   long <- comperes::as_longcr(wide)
 
   massy <- comperank::rate_massey(wide) 
   colley <- comperank::rate_colley(wide)
   
-  h2h <- comperes::h2h_long(wide, !!! h2h_funs) %>%
+  h2h <- comperes::h2h_long(wide, !!!comperes::h2h_funs) %>%
     dplyr::select(-player2) %>%
     dplyr::group_by(player1) %>%
     dplyr::summarise_all(mean, na.rm = T) %>%
@@ -39,9 +38,9 @@ fit_comprank <- function(self){
 
 
 
-#' predict_comprank
+#' predict_comperank
 #' @export
-predict_comprank <- function(self, new_data){
+predict_comperank <- function(self, new_data){
   
   if(is.null(self$model)){
     return(self$process$stream_id_x(new_data))

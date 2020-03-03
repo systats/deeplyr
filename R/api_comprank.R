@@ -16,17 +16,27 @@ fit_comprank <- function(self){
   
   long <- comperes::as_longcr(wide)
 
-  massy <- comperank::rank_massey(wide, keep_rating = T) 
-  colley <- comperank::rank_colley(wide, keep_rating = T)
-  keener <- comperank::rank_keener(long, !!! comperes::h2h_funs["mean_score"], keep_rating = T)
-  markov <- comperank::rank_markov(long, !!! comperes::h2h_funs["mean_score"], keep_rating = T)
-  od <- comperank::rank_od(long, if (player1[1] == player2[1]) 0 else mean(score1))
-  elo <- comperank::rank_elo(long, keep_rating = T)
-
-  list(massy, colley, keener, markov, od, elo) %>%
+  massy <- comperank::rate_massey(wide) 
+  colley <- comperank::rate_colley(wide)
+  
+  h2h <- comperes::h2h_long(wide, !!! h2h_funs) %>%
+    dplyr::select(-player2) %>%
+    dplyr::group_by(player1) %>%
+    dplyr::summarise_all(mean, na.rm = T) %>%
+    dplyr::ungroup() %>%
+    dplyr::rename(player = player1) %>%
+    dplyr::rename_at(-1, ~paste0("h2h_", .x))
+  
+  keener <- comperank::rate_keener(long, !!! comperes::h2h_funs["mean_score"])
+  markov <- comperank::rate_markov(long, !!! comperes::h2h_funs["mean_score"])
+  od <- comperank::rate_od(long, if (player1[1] == player2[1]) 0 else mean(score1))
+  elo <- comperank::rate_elo(long)
+  
+  list(h2h, massy, colley, keener, markov, od, elo) %>%
     purrr::reduce(dplyr::inner_join, by = "player") %>%
     dplyr::mutate_all(round, 3)
 }
+
 
 
 #' predict_comprank

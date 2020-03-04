@@ -55,8 +55,8 @@ rec <- recipe(local_team_score + visitor_team_score ~ local_team_id + visitor_te
 
 f2 <- learner$new(params = list(type = ""), task = "linear", backend = "comperank")
 
-f2$fit_pair(rec, na.omit(train[1:200,]))
-preds <- f2$predict_pair(test[1:100,], "w200")
+f2$fit_pair(rec, na.omit(games[1:20,]))
+preds <- f2$predict_pair(games[300:400,], "w200")
 preds %>% glimpse
 ```
 

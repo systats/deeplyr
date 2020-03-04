@@ -14,14 +14,14 @@ num_wins <- function (score_1, score_2, half_for_draw = F, na.rm = T){
 #' my_h2h_funs
 #' @export
 my_h2h_funs <- list(
-  mean_score_diff = expr(mean(score1 - score2)), 
-  mean_score_diff_pos = expr(max(mean(score1 - score2), 0)), 
-  mean_score = expr(mean(score1)), 
-  sum_score_diff = expr(sum(score1 - score2)), 
-  sum_score_diff_pos = expr(max(sum(score1 - score2), 0)), 
-  sum_score = expr(sum(score1)), 
-  num_wins = expr(deeplyr::num_wins(score1, score2, half_for_draw = F)), 
-  num_wins2 = expr(deeplyr::num_wins(score1, score2, half_for_draw = T))
+  mean_score_diff = rlang::expr(mean(score1 - score2)), 
+  mean_score_diff_pos = rlang::expr(max(mean(score1 - score2), 0)), 
+  mean_score = rlang::expr(mean(score1)), 
+  sum_score_diff = rlang::expr(sum(score1 - score2)), 
+  sum_score_diff_pos = rlang::expr(max(sum(score1 - score2), 0)), 
+  sum_score = rlang::expr(sum(score1)), 
+  num_wins = rlang::expr(deeplyr::num_wins(score1, score2, half_for_draw = F)), 
+  num_wins2 = rlang::expr(deeplyr::num_wins(score1, score2, half_for_draw = T))
 )
 
 #' get_comprank_h2h

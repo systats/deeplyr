@@ -31,7 +31,7 @@ fit_comperank <- function(self){
   od <- comperank::rate_od(long, if (player1[1] == player2[1]) 0 else mean(score1))
   elo <- comperank::rate_elo(long)
   
-  list(h2h, massy, colley, keener, markov, od, elo) %>%
+  list(massy, colley, keener, markov, od, elo, h2h) %>%
     purrr::reduce(dplyr::inner_join, by = "player") %>%
     dplyr::mutate_all(round, 3)
 }

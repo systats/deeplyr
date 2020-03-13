@@ -130,7 +130,3 @@ train %>% count(visitor_team_id)
 ```
 
 
-
-
-
-

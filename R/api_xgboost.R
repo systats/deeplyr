@@ -29,7 +29,7 @@ fit_xgboost <- function(self){
    ## set number of classes for object=multi
    if(self$meta$task == "multi") self$params$num_class <- length(unique(self$process$juice_y()))
    if(is.null(self$params$nrounds)) self$params$nrounds <- 30 
-   if(is.null(self$params$nthread)) self$params$nthread <- 4 
+   if(is.null(self$params$nthread)) self$params$nthread <- 10
    
    x_train <- self$process$juice_x_matrix()
    y_train <- as.numeric(as.character(self$process$juice_y()))
@@ -46,8 +46,8 @@ fit_xgboost <- function(self){
    
    ### main call
    mparams <- self$params %>% 
-      imap(~{ if(.y %in% c("nrounds", "nthread")) return(NULL) else  return(.x) }) %>%
-      compact
+      purrr::imap(~{ if(.y %in% c("nrounds", "nthread")) return(NULL) else  return(.x) }) %>%
+      purrr::compact()
    
    model <- xgboost::xgboost(
       params = mparams,

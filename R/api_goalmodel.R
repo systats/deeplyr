@@ -102,17 +102,6 @@ predict_goalmodel <- function(self, new_data){
 }
 
 
-#' load_rpart
-#' @export
-load_goalmodel <- function(path){
-}
-
-#' save_rpart
-#' @export
-save_goalmodel <- function(file, name, path){
-}
-
-
 #' goal_model
 #' @export
 goal_model <- function (goals1, goals2, team1, team2, x1 = NULL, x2 = NULL, 

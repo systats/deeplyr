@@ -15,6 +15,7 @@ learner <- R6::R6Class(
     
   ),
   public = list(
+    
     ### data slots
     meta = NULL,
     params = NULL,
@@ -139,22 +140,24 @@ learner <- R6::R6Class(
       if(model) private$model_save(self$model, "model", path)
       
       ### meta
-      if(!is.null(self$meta)) save_json_pos(self$meta, "meta", path)
+      save_json_pos(self$meta, "meta", path)
       
       ### params
-      if(!is.null(self$params)) self$params %>% purrr::keep(~is.numeric(.x)|is.character(.x)) %>% save_json_pos("params", path)
+      self$params %>% 
+        purrr::keep(~is.numeric(.x)|is.character(.x)) %>% 
+        save_json_pos("params", path)
 
       ### recipe
-      if(recipe  & !is.null(self$process$data)) save_rds_pos(self$process$data, "process", path)
+      if(recipe) save_rds_pos(self$process$data, "process", path)
             
       ### metrics
-      if(!is.null(self$metrics)) save_json_pos(self$metrics, "metrics", path)
+      save_json_pos(self$metrics, "metrics", path)
       
       ### preds
-      if(preds & !is.null(self$preds)) save_rds_pos(self$preds, "preds", path)
+      if(preds) save_rds_pos(self$preds, "preds", path)
       
       ### imps
-      if(!is.null(self$imps)) save_rds_pos(self$imps, "imps", path)
+      save_rds_pos(self$imps, "imps", path)
     }
   )
 )

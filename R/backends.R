@@ -124,6 +124,16 @@ backend <- R6::R6Class("backend",
         private$model_fit_pair <- fit_fastnb
         private$model_predict_pair <- predict_fastnb
       }
+      ### pi
+      if(self$meta$backend == "pi"){
+        private$model_fit_pair <- fit_pi
+        private$model_predict_pair <- predict_pi
+      }
+      ### PlayerRatings
+      if(self$meta$backend == "PlayerRatings"){
+        private$model_fit_pair <- fit_PlayerRatings
+        private$model_predict_pair <- predict_PlayerRatings
+      }
     }
   )
 )

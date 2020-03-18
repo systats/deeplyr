@@ -5,7 +5,7 @@ fit_PlayerRatings <- function(self){
   outcomes <- self$process$data$outcomes
   predictors <- self$process$juice_x()
   
-  .data <- tibble(
+  .data <- dplyr::tibble(
     week = 1:length(predictors[[1]]),
     team1 = predictors[[1]], 
     team2 = predictors[[2]],

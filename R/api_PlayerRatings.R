@@ -9,7 +9,7 @@ fit_PlayerRatings <- function(self){
     week = 1:length(predictors[[1]]),
     team1 = predictors[[1]], 
     team2 = predictors[[2]],
-    winner = case_when(
+    winner = dplyr::case_when(
       outcomes[[1]] > outcomes[[2]] ~ 1,
       outcomes[[1]] == outcomes[[2]] ~ .5,
       outcomes[[1]] < outcomes[[2]] ~ 0

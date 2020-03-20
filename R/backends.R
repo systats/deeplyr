@@ -134,6 +134,11 @@ backend <- R6::R6Class("backend",
         private$model_fit_pair <- fit_PlayerRatings
         private$model_predict_pair <- predict_PlayerRatings
       }
+      ### soccerstats
+      if(self$meta$backend == "soccerstats"){
+        private$model_fit_pair <- fit_soccerstats
+        private$model_predict_pair <- predict_soccerstats
+      }
     }
   )
 )

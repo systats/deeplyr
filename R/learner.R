@@ -116,11 +116,14 @@ learner <- R6::R6Class(
         
         yname <- self$process$ask_y() %>% 
           stringr::str_remove("^local_|^visitor_") %>% 
-          stringr::str_remove_all("_")
+          stringr::str_remove_all("_") %>%
+          paste0(., "_")
         
+        ### for summary stats only
+        if(yname == "_") yname <- ""
         private$model_predict_pair(self, new_data) %>%
           ### apply prefix other than team ids
-          dplyr::rename_at(-1:-3, ~ paste0(.x, "_", yname, "_", suffix))
+          dplyr::rename_at(-1:-3, ~ paste0(.x, "_", yname, suffix))
         
       } else {
         

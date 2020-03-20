@@ -22,20 +22,93 @@ load("gams_sub.Rdata")
 games <- gams_sub %>%
   filter(league_id == 82) %>%
   mutate_at(vars(game_id, contains("team_id")), as.integer) %>%
-  select(-winner_team_id)
-  # mutate(
-  #   local_team_id = as.factor(local_team_id),
-  #   visitor_team_id = as.factor(visitor_team_id)
-  # ) 
-
-games %>% 
-  count(local_team_id, visitor_team_id, sort = T)
+  select(-winner_team_id) %>%
+  mutate(winner = case_when(
+    local_team_score > visitor_team_score ~ 1,
+    local_team_score == visitor_team_score ~ .5,
+    local_team_score < visitor_team_score ~ 0,
+    )
+  ) %>%
+  rename(local_ft_score = local_team_score, visitor_ft_score = visitor_team_score) %>% 
+  mutate(
+    local_ht_score = local_ft_score,
+    visitor_ht_score = visitor_ft_score
+  )
 
 train <- games %>% 
   filter(year < 2019)
 test <- games %>% 
   filter(year > 2018)
 ```
+
+
+## Soccerstats
+
+```{r}
+devtools::document()
+
+rec <- recipe( ~ ., data = head(games)) %>%
+  update_role(game_id, new_role = "ID")
+
+f2 <- learner$new(params = list(type = ""), task = "linear", backend = "soccerstats")
+
+f2$fit_pair(rec, na.omit(train[1:100,]))
+preds <- f2$predict_pair(test[1:100,], "w200")
+preds %>% glimpse
+
+
+preds$local_hft_score_diff_mean_w200
+```
+
+
+## PlayerRatings
+
+* https://cran.r-project.org/web/packages/PlayerRatings/vignettes/AFLRatings.pdf
+
+```{r}
+library(PlayerRatings)
+
+devtools::document()
+
+rec <- recipe(local_team_score + visitor_team_score ~ local_team_id + visitor_team_id + game_id, data = head(games)) %>%
+  update_role(game_id, new_role = "ID")
+
+f2 <- learner$new(params = list(type = ""), task = "linear", backend = "PlayerRatings")
+
+f2$fit_pair(rec, na.omit(train[1:100,]))
+preds <- f2$predict_pair(test[1:100,], "w200")
+preds %>% glimpse
+```
+
+
+
+
+## PI
+
+* https://cran.r-project.org/web/packages/piratings/vignettes/README.html
+
+```{r}
+# devtools::install_github("echasnovski/comperank")
+#library(rlang)
+#library(comperank)
+
+# ncaa2005
+# mat <- comperes::as_widecr(ncaa2005)
+
+devtools::document()
+
+rec <- recipe(local_team_score + visitor_team_score ~ local_team_id + visitor_team_id + game_id, data = head(games)) %>%
+  update_role(game_id, new_role = "ID")
+
+f2 <- learner$new(params = list(type = ""), task = "linear", backend = "pi")
+
+f2$fit_pair(rec, na.omit(train[1:100,]))
+preds <- f2$predict_pair(test[1:100,], "w200")
+preds %>% glimpse
+
+piratings
+```
+
 
 
 ## Comprank

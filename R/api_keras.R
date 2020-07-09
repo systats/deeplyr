@@ -87,23 +87,24 @@ fit_keras <- function(self){
       
    }
    if(self$meta$task == "multi") {
-      if(is.null(self$params$output_dim)) self$params$output_dim <- length(unique(self$process$juice_y())) #1#ncol(self$data$train$y)
+      if(is.null(self$params$output_dim)) self$params$output_dim <- length(unique(self$meta$y))
       if(is.null(self$params$output_fun)) self$params$output_fun <- "softmax"
       if(is.null(self$params$loss)) self$params$loss <- "sparse_categorical_crossentropy"
       if(is.null(self$params$metrics)) self$params$metrics <- "accuracy"
       if(is.null(self$params$optimizer)) self$params$optimizer <- "adam"
    }
    
-   if(is.null(self$params$input_dim)) self$params$input_dim <- ncol(self$process$juice_x())
+   if(is.null(self$params$input_dim)) self$params$input_dim <- ncol(self$meta$x)
    if(is.null(self$params$batch_size)) self$params$batch_size <- 30
    if(is.null(self$params$verbose)) self$params$verbose <- 1
 
+   # 
    # define classweights by default
    if(!is.null(self$params$class_weights)){
-      if(ncol(self$process$juice_y_tibble()) == 1){
-         self$params$class_weights <- class_weight(self$process$juice_y())
+      if(ncol(self$meta$y) == 1){
+         self$params$class_weights <- class_weight(self$meta$y)
       } else {
-         self$params$class_weights <- class_weights(self$process$juice_y_tibble())
+         self$params$class_weights <- class_weights(self$meta$y)
       }
    }
 
@@ -132,17 +133,10 @@ fit_keras <- function(self){
          optimizer = self$params[["optimizer"]]
       )
    
-   x_train <- self$process$juice_x_matrix()
-   y_train <- as.numeric(as.character(self$process$juice_y()))
-   
-   # if(self$meta$task %in% c("binary", "multi")){
-   #    if(min(y_train) == 1) y_train <- y_train - 1
-   # }
-   
    keras_params <- list(
       object = model,
-      x = x_train,
-      y = y_train, #
+      x = self$meta$x,
+      y =  as.numeric(as.character(self$meta$y)), #
       batch_size = self$params[["batch_size"]],
       class_weight = self$params[["class_weights"]],
       epochs = self$params$epochs, # old: x$epochs %error%  in combination with early stoping: free lunch!
@@ -159,7 +153,7 @@ fit_keras <- function(self){
 #' @export
 predict_keras <- function(self, new_data){
    
-   pred <- predict(self$model, self$process$stream_matrix(new_data)) %>% round(3)
+   pred <- predict(self$model, new_data) %>% round(3)
    
    if(self$meta$task == "linear"){
      
@@ -185,7 +179,7 @@ predict_keras <- function(self, new_data){
        purrr::map_int(which.max) %>%
        as.factor()
      
-     tibble(pred) %>% bind_cols(probs)
+     dplyr::tibble(pred) %>% dplyr::bind_cols(probs)
    }
 }
 

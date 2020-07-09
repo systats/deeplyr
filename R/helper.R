@@ -75,6 +75,7 @@ complete_param = function(param1, param2){
 #' @export
 save_json <- function(file, name, path) {
   file %>% 
+    purrr::discard(is.null) %>% 
     dplyr::as_tibble() %>%
     jsonlite::toJSON() %>% 
     jsonlite::fromJSON() %>% 
@@ -88,7 +89,7 @@ save_json_pos <- purrr::possibly(save_json, NULL)
 
 #' save_rds
 #' @export
-save_rds <- function(file, name, path) saveRDS(file, file = glue::glue("{path}/{name}.rds"))
+save_rds <- function(file, name, path) readr::write_rds(file, path = glue::glue("{path}/{name}.rds"))
 
 #' save_rds_pos
 #' @export

@@ -4,163 +4,95 @@ learner <- R6::R6Class(
   
   inherit = backend,
   active = list(
-    
-    set_preds = function(x){
-      self$preds <- x
-    },
-    
-    set_metrics = function(x){
-      self$metrics <- x
+    set_metrics = function(metrics){
+      self$metrics <- metrics
     }
-    
   ),
   public = list(
     
     ### data slots
     meta = NULL,
     params = NULL,
-    process = NULL,
     model = NULL,
     imps = NULL,
     preds = NULL,
     metrics = NULL, 
     
-    ### extra
-    tokenizer = NULL, 
-    
     ### main functions
-    initialize = function(params, task = NULL, backend = NULL, retrain = F, predict = F){
+    initialize = function(params, task = NULL, backend = NULL, path = NULL){
       
-      if(retrain){
-        
-        self$meta <- load_meta(params)
-        self$params <- load_params(params)
-        self$process <- bridge$new()
-        #self$process <- readRDS(glue::glue("{params}/process.rds"))
-
-      } else if(predict){
-        
-        self$meta <- load_meta(params)
-        self$params <- load_params(params)
-        self$process <- bridge$new(readRDS(glue::glue("{params}/process.rds")))
-        
+      dir.exists_pos <- purrr::possibly(dir.exists, F)
+      p <- params[1]
+      if(dir.exists_pos(p)){
+        self$meta <- meta$new(p)
+        self$params <- load_params(p)
+        private$model_backend()
+        if(file.exists(glue::glue("{p}/model"))) self$model <- private$model_load(p)
       } else {
-        
-        self$process <- bridge$new()
+        self$meta <- meta$new()
         self$params <- params
-        self$meta$task <- task
-        self$meta$backend <- backend
         
+        self$meta$set("task",  task)
+        self$meta$set("backend",  backend)
+        private$model_backend()
       }
-      
-      private$model_backend()
-      
-      if(predict) self$model <- private$model_load(params)
-      if(file.exists(glue::glue("{params[[1]]}/tok"))) self$tokenizer <- load_tokenizer(params)
     },
   
     fit = function(x, y){
       
       ### freeze training data + pre-processing steps
-      self$process$bake(x, y)
+      #  self$process$bake(x, y)
+       
+      self$meta$feed(x, y, params = self$params)
       
-      self$meta$outcome <- self$process$ask_y()
-      self$meta$timestamp <- Sys.time()
-
       self$model <- private$model_fit(self)
 
-      self$meta$runtime <- as.numeric(Sys.time() - self$meta$timestamp)
+      self$meta$set("runtime", round(as.numeric(Sys.time() - self$meta$timestamp), 2))
 
-      ### if avaible: feature importane
       if(!is.null(private$model_imp)) self$imps <- private$model_imp(self)
-      self$meta$n_features <- ncol(self$process$juice_x())
-      self$meta$n_train <- nrow(self$process$juice())
     },
     
-    predict = function(new_data, dev = F){
+    predict = function(new_data, y_test = NULL, dev = F, add_x = F){
       
-      self$meta$n_test <- nrow(new_data)
+      nr <- nrow(new_data)
+      if(is.null(nr)) nr <- length(new_data)
+      self$meta$set("n_test",  nr)
       
-      self$preds <- private$model_predict(self, new_data) 
+      self$preds <- private$model_predict(self, self$meta$stream(new_data))
+      
+      if(add_x) self$preds <- cbind(self$preds, new_data)
+      
       if(dev) return(self$preds)
-      
-      self$preds <- self$preds %>% 
-        dplyr::bind_cols(new_data)
-        #dplyr::bind_cols(self$process$stream_all(new_data))
-      
-      if(self$process$ask_y() %in% colnames(dplyr::as_tibble(new_data))){
-        self$metrics <- model_eval(self, self$process$ask_y())
-      }
-    },
-    
-    fit_pair = function(x, y){
-      
-      ### freeze training data + pre-processing steps
-      self$process$bake(x, y)
-      self$meta$timestamp <- Sys.time()
-      
-      start <- Sys.time()
-      
-      self$model <- private$model_fit_pair(self)
-      
-      self$meta$runtime <- as.numeric(Sys.time() - start)
-      self$meta$n_features <- ncol(self$process$juice_x())
-      self$meta$n_train <- nrow(self$process$juice())
-    },
-    
-    predict_pair = function(new_data, suffix){
-      
-      if(!is.null(self$model)){
-    
-        self$meta$n_test <- nrow(new_data)
-        
-        yname <- self$process$ask_y() %>% 
-          stringr::str_remove("^local_|^visitor_") %>% 
-          stringr::str_remove_all("_") %>%
-          paste0(., "_")
-        
-        ### for summary stats only
-        if(yname == "_") yname <- ""
-        private$model_predict_pair(self, new_data) %>%
-          ### apply prefix other than team ids
-          dplyr::rename_at(-1:-3, ~ paste0(.x, "_", yname, suffix))
-        
-      } else {
-        
-        self$process$stream_id_x(new_data) %>%
-          dplyr::select(game_id, contains("team_id"))
-        
-      }
+      if(!is.null(y_test)) self$metrics <- model_eval(self, y_test)
     },
 
-    save = function(path = NULL, recipe = T, model = T, preds = T){
+    save = function(path = NULL){
       
-      if(is.null(path)) path <- "."
+      path <- glue::glue("{path}/{self$meta$model_id}")
       if(!dir.exists(path)) dir.create(path)
       
       ### model
       private$model_save <- purrr::possibly(private$model_save, NULL)
-      if(model) private$model_save(self$model, "model", path)
+      private$model_save(self$model, "model", path)
       
-      ### meta
-      save_json_pos(self$meta, "meta", path)
-      
-      ### params
+      ### meta & params
+      self$meta$get() %>% save_json_pos("meta", path)
       self$params %>% 
         purrr::keep(~is.numeric(.x)|is.character(.x)) %>% 
         save_json_pos("params", path)
 
-      ### recipe
-      if(recipe) save_rds_pos(self$process$data, "process", path)
+      ### recipe & tokenizer
+      if(!is.null(self$meta$recipe)) self$meta$recipe %>% save_rds_pos("recipe", path)
+      if(!is.null(self$meta$tok)) deeplyr::save_keras_tokenizer(self$meta$tok, path)
             
       ### metrics
-      save_json_pos(self$metrics, "metrics", path)
+      self$metrics %>% save_json_pos("metrics", path)
       
       ### preds
-      if(preds) save_rds_pos(self$preds, "preds", path)
+      self$preds %>% save_rds_pos("preds", path)
       
       ### imps
-      save_rds_pos(self$imps, "imps", path)
+      if(!is.null(self$imps)) self$imps %>% save_rds_pos("imps", path)
     }
   )
 )
@@ -255,4 +187,42 @@ fit_tcv <- function(rsample, rec, params, task, backend){
 }
 
 
-
+# fit_pair = function(x, y){
+#   
+#   ### freeze training data + pre-processing steps
+#   self$process$bake(x, y)
+#   self$meta$timestamp <- Sys.time()
+#   
+#   start <- Sys.time()
+#   
+#   self$model <- private$model_fit_pair(self)
+#   
+#   self$meta$runtime <- as.numeric(Sys.time() - start)
+#   self$meta$n_features <- ncol(x)
+#   self$meta$n_train <- nrow(x)
+# },
+# 
+# predict_pair = function(new_data, suffix){
+#   
+#   if(!is.null(self$model)){
+# 
+#     self$meta$n_test <- nrow(new_data)
+#     
+#     yname <- self$process$ask_y() %>% 
+#       stringr::str_remove("^local_|^visitor_") %>% 
+#       stringr::str_remove_all("_") %>%
+#       paste0(., "_")
+#     
+#     ### for summary stats only
+#     if(yname == "_") yname <- ""
+#     private$model_predict_pair(self, new_data) %>%
+#       ### apply prefix other than team ids
+#       dplyr::rename_at(-1:-3, ~ paste0(.x, "_", yname, suffix))
+#     
+#   } else {
+#     
+#     self$process$stream_id_x(new_data) %>%
+#       dplyr::select(game_id, contains("team_id"))
+#     
+#   }
+# },

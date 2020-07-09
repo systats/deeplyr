@@ -11,30 +11,181 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r}
 pacman::p_load(tidyverse, purrr, hardhat, AmesHousing, rsample, parsnip, recipes, deeplyr)
-# devtools::document()
-# devtools::install()
+devtools::document()
+devtools::load_all()
+#devtools::install()
+```
 
+
+```{r}
 d <- AmesHousing::ames_raw %>%
   janitor::clean_names() 
-
-d <- 1:10 %>%
-  map_dfr(~d) %>%
-  glimpse
 
 sp <- rsample::initial_split(d)
 
 train <- training(sp)
 test <- testing(sp)
 
-#hist(train$sale_price)
-rec <- recipes::recipe(sale_price ~ neighborhood + yr_sold + lot_area, data = head(train, 2000))
+rec <- recipes::recipe( ~ yr_sold + lot_area, data = head(train, 2000)) %>% prep
+
+f <- fit_learner(train, train$sale_price, params = list(recipe = rec), "linear", "xgboost")
+
+f$meta$get()
+f$meta$recipe
+f$meta$get()
+f$predict(test, y_test = test$sale_price)
+f$predict(test, dev = T)
+
+f$metrics
+f$meta$get()
+
+f$save("test")
+
+meta$new("test")
+
+g <- learner$new("test")
+g$predict(test, dev = T)
+```
+
+
+```{r}
+d <- get(load("label_political_final.Rdata"))
+
+tok <- deeplyr::fit_tokenizer(d$tweet, max_words = 1000)
+p <- list(tok = tok, model = list(deeplyr::keras_cnn_lstm), input_dim = 1000, seq_len = 30, epochs = 1)
+f <- fit_learner(d$tweet, d$pol, params = p, "binary", "keras")
+
+f$meta$get()
+f$meta$tok
+
+f$predict(d$tweet, y_test = d$pol)
+
+f$preds
+f$metrics
+
+f$predict(test, dev = T)
+```
+
+
+
+# Data
+
+```{r}
+# load("data/label_political_final.Rdata")
+pol_data <- get(load("label_political_final.Rdata")) %>%
+  #mutate(split = sample(1:5, size = n(), replace = T)) %>%
+  dplyr::mutate(split = sample(1:5, size = n(), replace = T)) %>%
+  dplyr::glimpse()
+```
+
+
+
+# fit_model
+
+```{r}
+p1 <- list(
+  input_dim = 10000,
+  seq_len = 50,
+  embed_dim = 128,
+  n_filters = 50,
+  lstm_dim =  50,
+  lstm_drop =  .3,
+  batch_size =  200,
+  min_word = 3,
+  max_docs = .5,
+  epochs = 1,
+  model = list(deeplyr::keras_cnn_lstm),
+  model_name = "cnn_lstm",
+  verbose = 1,
+  metric = "accuracy"
+)
+
+train <- pol_data[pol_data$split == 1, ]
+test <- pol_data[pol_data$split == 2, ]
+
+p1$tok <- deeplyr::fit_tokenizer(
+  text = train$tweet, 
+  max_words = p1$input_dim,
+  max_docs = p1$max_docs, 
+  min_word = p1$min_word,
+  char_level= F
+  # path = path
+)
+
+f <- deeplyr::fit_learner(train$tweet, train$pol, p1, "binary", "keras")
+f$predict(test$tweet, y_test = test$pol)
+f$save("test2")
+
+gg <- learner$new("test2/69dc2657")
+gg$meta$tok
+gg$predict(pol_data$tweet, dev = T)
+
+gg
+```
+
+
+* 5 Fold CV + Final Run (all data)
+
+
+```{r}
+fold_cv_oob <- function(data, split){
+  ### extract id and split vars
+  idx <- tibble(rid = 1:nrow(data), split = split)
+  ### find test instances
+  indices <- 1:5 %>% purrr::map(~{idx$rid[idx$split == .x]})
+  ### analysis/assessment
+  indices <- indices %>% purrr::map(rsample:::vfold_complement, n = nrow(idx))
+  ### make split obj.
+  split_objs <- purrr::map(indices, rsample:::make_splits, data = data, class = "vfold_split")
+  tibble::tibble(splits = split_objs, id = paste0("Fold", 1:length(split_objs)))
+}
 ```
 
 ```{r}
-f <- deeplyr::fit_learner(rec, train, list(), "linear", "xgboost")
-f$predict(test)
+#' fit_cv
+#' @export
+fit_cv <- function(rsample, params, task, backend, path = NULL){
+  
+  out <- rsample %>%
+    dplyr::mutate(
+      models = map(splits, ~{
+        
+        train <- dplyr::bind_rows(rsample::analysis(.x))
+        test <- dplyr::bind_rows(rsample::assessment(.x))
+ 
+        f <- deeplyr::fit_learner(train$tweet, train$pol, params, "binary", "keras")
+        f$predict(test$tweet, y_test = test$pol)
+        
+        return(f)
+      })
+    ) %>%  
+    dplyr::transmute(id, metrics = purrr::map(models, ~ bind_cols(.x$metrics))) %>% 
+    tidyr::unnest("metrics") 
+  
+  return(out)
+}
+
+nn <- fold_cv_oob(pol_data, pol_data$split) %>% fit_cv(p1, "binary", "keras")
+final_metrics <- rbind(nn %>% summarise_at(-1, mean) %>% cbind(tibble(id = "overall"), .), nn)
+
+# save_json(final, "nn1.json", ".")
+f <- deeplyr::fit_learner(pol_data$tweet, pol_data$pol, p1, "binary", "keras")
+f$set_metrics <- final_metrics
+f$save("test2")
 f$metrics
-f$meta
+```
+
+
+
+```{r}
+devtools::document()
+devtools::load_all()
+```
+
+
+```{r}
+gg <- learner$new("test2/2a01afb0")
+gg$predict(pol_data$tweet, dev = T)
 ```
 
 

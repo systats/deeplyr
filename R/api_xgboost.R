@@ -11,7 +11,7 @@ save_xgboost <- function(file, name, path) xgboost::xgb.save(file, fname = glue:
 #' @export
 feature_imp_xgboost <- function(self){
 
-   xgboost::xgb.importance(feature_names = colnames(self$process$juice_x()), model = self$model) %>%
+   xgboost::xgb.importance(feature_names = self$meta$x_name, model = self$model) %>%
       dplyr::as_tibble() %>%
       janitor::clean_names() 
 }
@@ -27,21 +27,14 @@ fit_xgboost <- function(self){
    if(self$meta$task == "multi") self$params$objective <- "multi:softprob"
    
    ## set number of classes for object=multi
-   if(self$meta$task == "multi") self$params$num_class <- length(unique(self$process$juice_y()))
+   if(self$meta$task == "multi") self$params$num_class <- length(unique(self$meta$y))
    if(is.null(self$params$nrounds)) self$params$nrounds <- 30 
    if(is.null(self$params$nthread)) self$params$nthread <- 10
    
-   x_train <- self$process$juice_x_matrix()
-   y_train <- as.numeric(as.character(self$process$juice_y()))
-   
-   # if(self$meta$task %in% c("binary", "multi")){
-   #   if(min(y_train) == 1) y_train <- y_train - 1
-   # }
-   
    ### set training and evaluation data
    input <- xgboost::xgb.DMatrix(
-     data = x_train, 
-     label = y_train
+     data = as.matrix(self$meta$x), 
+     label = self$meta$y
    )
    
    ### main call
@@ -68,12 +61,12 @@ fit_xgboost <- function(self){
 #' @export
 predict_xgboost <- function(self, new_data) {
 
-  input <- xgboost::xgb.DMatrix(data = self$process$stream_matrix(new_data))
+  input <- xgboost::xgb.DMatrix(data = as.matrix(new_data))
   
   if (self$meta$task == "linear") {
     
     pred <- predict(self$model, newdata = input) %>% round(3)
-    dplyr::tibble(pred)
+    return(dplyr::tibble(pred))
     
   } else if (self$meta$task == "binary") {
     
@@ -83,7 +76,7 @@ predict_xgboost <- function(self, new_data) {
     pred <- ifelse(prob > .5, 1, 0) %>% 
       as.factor()
     
-    dplyr::tibble(pred, prob)
+    return(dplyr::tibble(pred, prob))
     
   } else if (self$meta$task == "multi") {
     
@@ -97,16 +90,7 @@ predict_xgboost <- function(self, new_data) {
       purrr::map_int(which.max) %>% 
       as.factor() 
     
-    tibble(pred) %>% bind_cols(probs)
+    return(tibble(pred) %>% dplyr::bind_cols(probs))
     
   }
 }
-
-
-
-
-
-
-
-
-

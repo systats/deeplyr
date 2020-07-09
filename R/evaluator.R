@@ -61,7 +61,7 @@ eval_linear <- function(preds, y){
     # rrse = Metrics::rrse,
     # rae = Metrics::rae
   ) %>%
-    compute_metrics(preds[[y]], preds$pred)
+    compute_metrics(y, preds$pred)
 }
 
 #' f1
@@ -87,14 +87,14 @@ eval_binary <- function(preds, y){
     sd = sd_pred,
     sd_actual = sd_actual
   ) %>%
-    compute_metrics(as.numeric(as.character(preds[[y]])), as.numeric(as.character(preds$pred)))
+    compute_metrics(as.numeric(as.character(y)), as.numeric(as.character(preds$pred)))
   
   prob <- list(
     ll = Metrics::ll,
     logloss = Metrics::logLoss,
     auc = Metrics::auc
   ) %>%
-    compute_metrics(as.numeric(as.character(preds[[y]])), preds$prob) 
+    compute_metrics(as.numeric(as.character(y)), preds$prob) 
   
   c(pred, prob)
 }
@@ -135,11 +135,11 @@ eval_multi <- function(preds, y){
     sd_actual = sd_actual
     #f1 = Metrics::f1
   ) %>%
-    compute_metrics(as.numeric(as.character(preds[[y]])), as.numeric(as.character(preds$pred)))
+    compute_metrics(as.numeric(as.character(y)), as.numeric(as.character(preds$pred)))
   
   prob <- list(rps = rank_prob_score) %>%
     purrr::map(possibly, otherwise = NULL) %>%
-    purrr::map_dfc(~mean(.x(as.numeric(as.character(preds[[y]])), preds %>% select(contains("prob")) %>% as.matrix), na.rm = T))
+    purrr::map_dfc(~mean(.x(as.numeric(as.character(y)), preds %>% select(contains("prob")) %>% as.matrix), na.rm = T))
   
   c(pred, prob)
 }

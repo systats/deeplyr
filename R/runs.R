@@ -52,70 +52,18 @@ load_cv <- function(path) jsonlite::fromJSON(glue::glue("{path}/cv_metrics.json"
 #' @export 
 load_list_files <- function(path) dir(glue::glue("{path}"))
 
+
 #' list_runs
 #' @export 
-list_runs <- function(.data){
+list_runs <- function(path) {
   
-  init_models()
-  run_id <- dir(.data$par_path)  
-  run_path <- dir(.data$par_path, full.names = T)
+  run_id <- dir(path)
+  run_path <- dir(path, full.names = T)
   
   dplyr::tibble(run_id, run_path) %>% 
     dplyr::mutate(
-      meta = purrr::map(run_path, possibly(load_meta, NULL)), 
-      params = purrr::map(run_path, possibly(load_params, NULL)), 
-      metrics = purrr::map(run_path, possibly(load_metrics, NULL)),
-      cv_metrics = purrr::map(run_path, possibly(load_cv, NULL))
-      # evals = purrr::map(run_path, possibly(load_evals, NULL))
-    ) %>%
-    cbind(.data)
-}
-
-
-#' filter_parent
-#' @export
-filter_parent <- function(parent){
-  if(is.numeric(parent)){
-    # set parent experiment by number
-    dplyr::filter(list_parents(), par_number == parent)
-  } else if(is.character(parent)){
-    # set by name
-    dplyr::filter(list_parents(), par_id == parent | par_name == parent | par_path == parent)
-  }
-}
-
-
-#' init_parent
-#' @export
-init_parent <- function(parent){
-  
-  ### check if models exists
-  init_models()
-  
-  ### check if parent exists
-  par <- filter_parent(parent)
-  
-  ### initalize parent
-  if(nrow(par) == 0){
-    num <- stringr::str_pad((nrow(list_parents()) + 1), width = 2, side = "left", pad = "0")
-    dir.create(glue::glue("models/{num}_{parent}"))
-    par <- filter_parent(parent)
-  }
-  
-  return(par)
-}
-
-
-#' init_run
-#' @export
-init_run <- function(par_path){
-  
-  ### check if models exists
-  init_models()
-  
-  runid <- stringr::str_sub(digest::digest(Sys.time()), 1, 8)
-  run_path <- glue::glue("{par_path}/{runid}")
-  dir.create(run_path)
-  #dir.create(glue::glue("{run_path}/outputs"))
-  return(run_path)
+      meta = purrr::map(run_path, possibly(load_meta, NULL)),
+      params = purrr::map(run_path, possibly(load_params, NULL)),
+      metrics = purrr::map(run_path, possibly(load_metrics, NULL))
+    )
 }

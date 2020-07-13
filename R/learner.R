@@ -106,9 +106,9 @@ fit_learner <- function(x, y, params, task, backend){
   return(g)
 }
 
-#' vfold_cv_oob
+#' fold_cv_oob
 #' @export
-vfold_cv_oob <- function(data, v, split){
+fold_cv_oob <- function(data, split){
   ### extract id and split vars
   idx <- tibble(rid = 1:nrow(data), split = split)
   ### find test instances

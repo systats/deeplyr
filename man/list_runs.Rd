@@ -4,7 +4,7 @@
 \alias{list_runs}
 \title{list_runs}
 \usage{
-list_runs(.data)
+list_runs(path)
 }
 \description{
 list_runs

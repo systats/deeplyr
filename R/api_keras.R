@@ -135,10 +135,10 @@ fit_keras <- function(self){
    
    keras_params <- list(
       object = model,
-      x = self$meta$x,
+      x = as.matrix(self$meta$x),
       y =  as.numeric(as.character(self$meta$y)), #
       batch_size = self$params[["batch_size"]],
-      class_weight = self$params[["class_weights"]],
+      # class_weight = self$params[["class_weights"]],
       epochs = self$params$epochs, # old: x$epochs %error%  in combination with early stoping: free lunch!
       #callbacks = self$params$callbacks,
       verbose = self$params$verbose
@@ -153,7 +153,7 @@ fit_keras <- function(self){
 #' @export
 predict_keras <- function(self, new_data){
    
-   pred <- predict(self$model, new_data) %>% round(3)
+   pred <- predict(self$model, as.matrix(new_data)) %>% round(3)
    
    if(self$meta$task == "linear"){
      

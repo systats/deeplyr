@@ -37,6 +37,10 @@ learner <- R6::R6Class(
         private$model_backend()
       }
     },
+    
+    set = function(key, value){
+      self[[key]] <- value
+    },
   
     fit = function(x, y){
       

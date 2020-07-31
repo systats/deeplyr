@@ -98,29 +98,28 @@ fit_keras <- function(self){
    if(is.null(self$params$batch_size)) self$params$batch_size <- 30
    if(is.null(self$params$verbose)) self$params$verbose <- 1
 
-   # 
    # define classweights by default
-   if(!is.null(self$params$class_weights)){
-      if(ncol(self$meta$y) == 1){
-         self$params$class_weights <- class_weight(self$meta$y)
-      } else {
-         self$params$class_weights <- class_weights(self$meta$y)
-      }
-   }
+   # if(!is.null(self$params$class_weight)){
+   #    if(ncol(self$meta$y) == 1){
+   #       self$params$class_weight <- class_weight(self$meta$y)
+   #    } else {
+   #       self$params$class_weight <- class_weights(self$meta$y)
+   #    }
+   # }
 
-   if(is.null(self$params$model)){
-      
-      message("new simple model")
-      
-      simple_model = function(input_dim = self$params$input_dim, output_dim = self$params$output_dim, output_fun = self$params$output_fun){
-         keras::keras_model_sequential() %>%
-            keras::layer_dense(units = 10, activation = "relu", input_shape = input_dim) %>%
-            keras::layer_dense(units = output_dim, activation = output_fun)
-      }
-
-      summary(simple_model())
-      self$params$model <- list(simple_model)
-   }
+   # if(is.null(self$params$model)){
+   #    
+   #    message("new simple model")
+   #    
+   #    simple_model = function(input_dim = self$params$input_dim, output_dim = self$params$output_dim, output_fun = self$params$output_fun){
+   #       keras::keras_model_sequential() %>%
+   #          keras::layer_dense(units = 10, activation = "relu", input_shape = input_dim) %>%
+   #          keras::layer_dense(units = output_dim, activation = output_fun)
+   #    }
+   # 
+   #    summary(simple_model())
+   #    self$params$model <- list(simple_model)
+   # }
    
    ### compile keras model
    model_params <- get_params(self$params$model[[1]], self$params)
@@ -138,7 +137,8 @@ fit_keras <- function(self){
       x = as.matrix(self$meta$x),
       y =  as.numeric(as.character(self$meta$y)), #
       batch_size = self$params[["batch_size"]],
-      # class_weight = self$params[["class_weights"]],
+      class_weight = self$params[["class_weight"]],
+      sample_weight = self$params[["sample_weight"]],
       epochs = self$params$epochs, # old: x$epochs %error%  in combination with early stoping: free lunch!
       #callbacks = self$params$callbacks,
       verbose = self$params$verbose

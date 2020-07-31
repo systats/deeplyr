@@ -140,7 +140,7 @@ fit_keras <- function(self){
       class_weight = self$params[["class_weight"]],
       sample_weight = self$params[["sample_weight"]],
       epochs = self$params$epochs, # old: x$epochs %error%  in combination with early stoping: free lunch!
-      #callbacks = self$params$callbacks,
+      callbacks = self$params[["callbacks"]],
       verbose = self$params$verbose
    )
 

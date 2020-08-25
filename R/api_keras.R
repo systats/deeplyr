@@ -134,8 +134,8 @@ fit_keras <- function(self){
    
    keras_params <- list(
       object = model,
-      x = as.matrix(self$meta$x),
-      y =  as.numeric(as.character(self$meta$y)), #
+      x = self$meta$x,
+      y =  self$meta$y, #
       batch_size = self$params[["batch_size"]],
       class_weight = self$params[["class_weight"]],
       sample_weight = self$params[["sample_weight"]],
@@ -153,7 +153,7 @@ fit_keras <- function(self){
 #' @export
 predict_keras <- function(self, new_data){
    
-   pred <- predict(self$model, as.matrix(new_data)) %>% round(3)
+   pred <- predict(self$model, new_data) %>% round(3)
    
    if(self$meta$task == "linear"){
      

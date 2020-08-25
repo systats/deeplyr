@@ -86,11 +86,11 @@ meta <- R6::R6Class(
       if(!is.null(self$recs)){
         return(self$recs$extract(x))
       } else if(!is.null(self$recipe)){
-        return(recipes::bake(self$recipe, x))
+        return(as.matrix(recipes::bake(self$recipe, x)))
       } else if(!is.null(self$tok)){
-        return(deeplyr::tokenize_text(x, self$tok, seq_len = self$params$seq_len))
+        return(as.matrix(deeplyr::tokenize_text(x, self$tok, seq_len = self$params$seq_len)))
       } else {
-        return(x)
+        return(as.matrix(x))
       }
     }, 
     

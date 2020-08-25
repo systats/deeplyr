@@ -7,6 +7,7 @@ meta <- R6::R6Class(
   public = list(
     
     params = NULL,
+    recs = NULL,
     recipe = NULL,
     tok = NULL,
     

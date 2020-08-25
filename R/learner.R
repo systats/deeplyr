@@ -86,8 +86,9 @@ learner <- R6::R6Class(
         save_json_pos("params", path)
 
       ### recipe & tokenizer
+      if(!is.null(self$meta$recs)) self$meta$recipe %>% save_rds_pos("recs", path)
       if(!is.null(self$meta$recipe)) self$meta$recipe %>% save_rds_pos("recipe", path)
-      if(!is.null(self$meta$tok)) deeplyr::save_keras_tokenizer(self$meta$tok, path)
+      if(!is.null(self$meta$tok)) save_keras_tokenizer(self$meta$tok, path)
             
       ### metrics
       self$metrics %>% save_json_pos("metrics", path)

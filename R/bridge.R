@@ -27,7 +27,9 @@ meta <- R6::R6Class(
     initialize = function(path = NULL){
       if(!is.null(path)){
         if(file.exists(glue::glue("{path}/meta.json"))){
-          m <- jsonlite::read_json(glue::glue("{path}/meta.json"))[[1]] %>% glimpse
+          
+          sm <- jsonlite::read_json(glue::glue("{path}/meta.json"))[[1]] %>% glimpse
+          
           self$model_id <- m$model_id
           self$timestamp <- m$timestamp
           self$runtime <- m$runtime
@@ -36,13 +38,19 @@ meta <- R6::R6Class(
           self$n_train <- m$n_train
           self$n_test <- m$n_test
           self$n_features <- m$n_features
+          
+          if(file.exists(glue::glue("{path}/recs.rds"))){
+            self$recs <- readr::read_rds(glue::glue("{path}/recs.rds"))
+          }
           if(file.exists(glue::glue("{path}/recipe.rds"))){
             self$recipe <- readr::read_rds(glue::glue("{path}/recipe.rds"))
           }
           if(file.exists(glue::glue("{path}/tok"))){
             self$tok <- keras::load_text_tokenizer(glue::glue("{path}/tok"))
           }
+          
           self$params <- jsonlite::read_json(glue::glue("{path}/params.json"))[[1]]
+          
         } else {
           stop("Model does not exist")
         }
@@ -75,7 +83,9 @@ meta <- R6::R6Class(
     },
     
     stream = function(x, params){
-      if(!is.null(self$recipe)){
+      if(!is.null(self$recs)){
+        return(self$recs$extract(x))
+      } else if(!is.null(self$recipe)){
         return(recipes::bake(self$recipe, x))
       } else if(!is.null(self$tok)){
         return(deeplyr::tokenize_text(x, self$tok, seq_len = self$params$seq_len))

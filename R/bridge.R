@@ -29,7 +29,7 @@ meta <- R6::R6Class(
       if(!is.null(path)){
         if(file.exists(glue::glue("{path}/meta.json"))){
           
-          sm <- jsonlite::read_json(glue::glue("{path}/meta.json"))[[1]] %>% glimpse
+          m <- jsonlite::read_json(glue::glue("{path}/meta.json"))[[1]] %>% glimpse
           
           self$model_id <- m$model_id
           self$timestamp <- m$timestamp

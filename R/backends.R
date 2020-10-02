@@ -102,6 +102,15 @@ backend <- R6::R6Class("backend",
         
       }
       
+      ### glmnet
+      if(self$meta$backend == "glmnet"){
+        
+        private$model_fit <- fit_glmnet
+        private$model_predict <- predict_glmnet
+        private$model_save <- save_glmnet
+        private$model_load <- load_glmnet
+      }
+      
       ### FEATURES
       
       ### goalmodel
